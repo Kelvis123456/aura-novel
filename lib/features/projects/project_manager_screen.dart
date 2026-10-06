@@ -1,0 +1,644 @@
+import 'package:flutter/material.dart';
+
+import '../../core/app_scope.dart';
+import '../editor/editor_screen.dart';
+import 'branch_tree_viewer.dart';
+import 'editor_document_binding.dart';
+import 'export_dialog.dart';
+import 'models/project_model.dart';
+import 'models/story_node_model.dart';
+import 'project_controller.dart';
+
+/// Entry point for project management: list projects → drill into a
+/// project's chapters → drill into a chapter's branching history
+/// ([BranchTreeViewer]), from where any version can be opened in
+/// [EditorScreen] or forked into a new named branch.
+class ProjectManagerScreen extends StatefulWidget {
+  final Color accentColor;
+
+  const ProjectManagerScreen({super.key, this.accentColor = const Color(0xFFDC143C)});
+
+  @override
+  State<ProjectManagerScreen> createState() => _ProjectManagerScreenState();
+}
+
+class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
+  late final ProjectController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final scope = AppScope.of(context);
+    _controller = ProjectController(repository: scope.projectRepository)..addListener(_onChanged);
+    _controller.loadProjects();
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _createProject() async {
+    final result = await _showProjectDialog();
+    if (result == null) return;
+    await _controller.createProject(title: result.$1, synopsis: result.$2);
+  }
+
+  Future<(String, String)?> _showProjectDialog() async {
+    final titleController = TextEditingController();
+    final synopsisController = TextEditingController();
+    final accent = widget.accentColor;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: const Text('Nuevo proyecto', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(labelText: 'Título', labelStyle: TextStyle(color: Colors.white54)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: synopsisController,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(labelText: 'Sinopsis', labelStyle: TextStyle(color: Colors.white54)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: accent),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true || titleController.text.trim().isEmpty) return null;
+    return (titleController.text.trim(), synopsisController.text.trim());
+  }
+
+  Future<void> _confirmDeleteProject(ProjectModel project) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: Text('¿Eliminar "${project.title}"?', style: const TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Text(
+          'Se eliminarán también todos sus capítulos y versiones guardadas. Esta acción no se puede deshacer.',
+          style: TextStyle(color: Colors.white60),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _controller.deleteProject(project.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.accentColor;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Mis Proyectos'),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.6),
+            radius: 1.4,
+            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
+          ),
+        ),
+        child: _controller.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _controller.projects.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        'Aún no hay proyectos. Pulsa "+" para crear el primero.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white38, fontSize: 13),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                    itemCount: _controller.projects.length,
+                    itemBuilder: (context, index) {
+                      final project = _controller.projects[index];
+                      return _ProjectCard(
+                        project: project,
+                        accent: accent,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => _ChapterListScreen(project: project, controller: _controller, accent: accent),
+                          ),
+                        ),
+                        onDelete: () => _confirmDeleteProject(project),
+                      );
+                    },
+                  ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: accent,
+        onPressed: _createProject,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _ChapterListScreen extends StatefulWidget {
+  final ProjectModel project;
+  final ProjectController controller;
+  final Color accent;
+
+  const _ChapterListScreen({required this.project, required this.controller, required this.accent});
+
+  @override
+  State<_ChapterListScreen> createState() => _ChapterListScreenState();
+}
+
+class _ChapterListScreenState extends State<_ChapterListScreen> {
+  List<ChapterModel> _chapters = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _isLoading = true);
+    final chapters = await widget.controller.loadChapters(widget.project.id);
+    if (!mounted) return;
+    setState(() {
+      _chapters = chapters;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _createChapter() async {
+    final titleController = TextEditingController();
+    final accent = widget.accent;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: const Text('Nuevo capítulo', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: titleController,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(labelText: 'Título', labelStyle: TextStyle(color: Colors.white54)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: accent),
+            child: const Text('Crear'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true && titleController.text.trim().isNotEmpty) {
+      await widget.controller.createChapter(projectId: widget.project.id, title: titleController.text.trim());
+      await _load();
+    }
+  }
+
+  Future<void> _confirmDeleteChapter(ChapterModel chapter) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: Text('¿Eliminar "${chapter.title}"?', style: const TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Text('Se eliminarán también todas sus versiones guardadas.', style: TextStyle(color: Colors.white60)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await widget.controller.deleteChapter(chapter.id);
+      await _load();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.accent;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(widget.project.title, overflow: TextOverflow.ellipsis),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.ios_share),
+            tooltip: 'Exportar proyecto',
+            onPressed: _chapters.isEmpty
+                ? null
+                : () => showExportDialog(
+                      context,
+                      project: widget.project,
+                      chapters: _chapters,
+                      repository: widget.controller.repository,
+                      accent: accent,
+                    ),
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.6),
+            radius: 1.4,
+            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
+          ),
+        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _chapters.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        'Aún no hay capítulos. Pulsa "+" para crear el primero.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white38, fontSize: 13),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                    itemCount: _chapters.length,
+                    itemBuilder: (context, index) {
+                      final chapter = _chapters[index];
+                      return _ChapterCard(
+                        chapter: chapter,
+                        accent: accent,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => _ChapterDetailScreen(
+                              project: widget.project,
+                              chapter: chapter,
+                              controller: widget.controller,
+                              accent: accent,
+                            ),
+                          ),
+                        ),
+                        onDelete: () => _confirmDeleteChapter(chapter),
+                      );
+                    },
+                  ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: accent,
+        onPressed: _createChapter,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _ChapterDetailScreen extends StatefulWidget {
+  final ProjectModel project;
+  final ChapterModel chapter;
+  final ProjectController controller;
+  final Color accent;
+
+  const _ChapterDetailScreen({
+    required this.project,
+    required this.chapter,
+    required this.controller,
+    required this.accent,
+  });
+
+  @override
+  State<_ChapterDetailScreen> createState() => _ChapterDetailScreenState();
+}
+
+class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
+  List<StoryNodeModel> _nodes = [];
+  bool _isLoading = true;
+  String? _selectedNodeId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _isLoading = true);
+    final nodes = await widget.controller.loadNodes(widget.chapter.id);
+    if (!mounted) return;
+    setState(() {
+      _nodes = nodes;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _startFirstVersion() async {
+    final node = await widget.controller.saveVersion(chapterId: widget.chapter.id, content: '');
+    await _load();
+    if (mounted) _openInEditor(node);
+  }
+
+  void _openInEditor(StoryNodeModel node) {
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => EditorScreen(
+              accentColor: widget.accent,
+              initialContent: node.content,
+              documentBinding: EditorDocumentBinding(
+                projectId: widget.project.id,
+                chapterId: widget.chapter.id,
+                nodeId: node.id,
+              ),
+            ),
+          ),
+        )
+        .then((_) => _load());
+  }
+
+  Future<void> _handleSelectNode(StoryNodeModel node) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF0D0508),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.edit_outlined, color: widget.accent),
+              title: const Text('Abrir en el editor', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.of(sheetContext).pop('open'),
+            ),
+            ListTile(
+              leading: Icon(Icons.call_split, color: widget.accent),
+              title: const Text('Crear rama desde aquí', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.of(sheetContext).pop('branch'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (action == 'open') {
+      setState(() => _selectedNodeId = node.id);
+      _openInEditor(node);
+    } else if (action == 'branch') {
+      await _createBranchFrom(node);
+    }
+  }
+
+  Future<void> _createBranchFrom(StoryNodeModel node) async {
+    final nameController = TextEditingController();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: const Text('Nueva rama', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Nombre de la rama',
+            hintText: 'ej. Ruta A: Aceptar la propuesta',
+            labelStyle: TextStyle(color: Colors.white54),
+            hintStyle: TextStyle(color: Colors.white38),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: widget.accent),
+            child: const Text('Crear'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true || nameController.text.trim().isEmpty) return;
+
+    final branch = await widget.controller.createBranch(fromNode: node, branchName: nameController.text.trim());
+    await _load();
+    if (mounted) _openInEditor(branch);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.accent;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(widget.chapter.title, overflow: TextOverflow.ellipsis),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.6),
+            radius: 1.4,
+            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
+          ),
+        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : BranchTreeViewer(
+                nodes: _nodes,
+                selectedNodeId: _selectedNodeId,
+                accent: accent,
+                onSelectNode: _handleSelectNode,
+                onBranchFromNode: _createBranchFrom,
+              ),
+      ),
+      floatingActionButton: _nodes.isEmpty
+          ? FloatingActionButton.extended(
+              backgroundColor: accent,
+              onPressed: _startFirstVersion,
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Empezar a escribir'),
+            )
+          : null,
+    );
+  }
+}
+
+class _ProjectCard extends StatelessWidget {
+  final ProjectModel project;
+  final Color accent;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _ProjectCard({required this.project, required this.accent, required this.onTap, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.menu_book_outlined, color: accent, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        project.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      if (project.synopsis.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            project.synopsis,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white60, fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white38),
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChapterCard extends StatelessWidget {
+  final ChapterModel chapter;
+  final Color accent;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _ChapterCard({required this.chapter, required this.accent, required this.onTap, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: accent.withValues(alpha: 0.2),
+                  child: Text('${chapter.order + 1}', style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    chapter.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white38),
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
