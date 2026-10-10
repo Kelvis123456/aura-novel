@@ -33,7 +33,10 @@ class ServerErrorException extends ApiClientException {
   final int statusCode;
   final String? serverMessage;
 
-  ServerErrorException(this.statusCode, {this.serverMessage})
+  /// Server-requested wait before retrying (`Retry-After`), if it sent one.
+  final Duration? retryAfter;
+
+  ServerErrorException(this.statusCode, {this.serverMessage, this.retryAfter})
       : super(
           serverMessage != null && serverMessage.isNotEmpty
               ? 'Server error $statusCode: $serverMessage'

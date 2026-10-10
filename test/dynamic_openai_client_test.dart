@@ -29,8 +29,12 @@ String _delta(String text) => jsonEncode({
       ]
     });
 
-DynamicOpenAIClient _clientFor(http.Client http, {ApiEndpointConfig? config = _config}) =>
-    DynamicOpenAIClient(configStorage: _FakeConfigStorage(config), httpClient: http);
+DynamicOpenAIClient _clientFor(
+  http.Client http, {
+  ApiEndpointConfig? config = _config,
+  List<Duration> retryDelays = const [],
+}) =>
+    DynamicOpenAIClient(configStorage: _FakeConfigStorage(config), httpClient: http, retryDelays: retryDelays);
 
 http.Client _streaming(int status, String body) => MockClient.streaming((request, bodyStream) async {
       return http.StreamedResponse(Stream.value(utf8.encode(body)), status);
@@ -128,6 +132,95 @@ void main() {
       final mock = MockClient((_) async => http.Response('no es json', 200));
 
       expect(_clientFor(mock).send(_request), throwsA(isA<MalformedResponseException>()));
+    });
+  });
+
+  group('reintentos', () {
+    const twoRetries = [Duration.zero, Duration.zero];
+
+    /// Answers with [statuses] in order, then repeats the last one.
+    http.Client sequence(List<int> statuses, {Map<String, String> headers = const {}, void Function()? onCall}) {
+      var calls = 0;
+      return MockClient.streaming((request, _) async {
+        onCall?.call();
+        final status = statuses[calls < statuses.length ? calls : statuses.length - 1];
+        calls++;
+        final body = status == 200 ? _sse([_delta('ok'), '[DONE]']) : 'error';
+        return http.StreamedResponse(Stream.value(utf8.encode(body)), status, headers: headers);
+      });
+    }
+
+    test('reintenta un 503 y termina bien', () async {
+      var calls = 0;
+      final client = _clientFor(sequence([503, 200], onCall: () => calls++), retryDelays: twoRetries);
+      final chunks = await client.stream(_request).toList();
+
+      expect(calls, 2);
+      expect(chunks.first.deltaContent, 'ok');
+    });
+
+    test('reintenta un 429', () async {
+      var calls = 0;
+      await _clientFor(sequence([429, 429, 200], onCall: () => calls++), retryDelays: twoRetries)
+          .stream(_request)
+          .toList();
+
+      expect(calls, 3);
+    });
+
+    test('agota los reintentos y lanza el último error', () async {
+      var calls = 0;
+      final client = _clientFor(sequence([503], onCall: () => calls++), retryDelays: twoRetries);
+
+      await expectLater(
+        client.stream(_request).toList(),
+        throwsA(isA<ServerErrorException>().having((e) => e.statusCode, 'statusCode', 503)),
+      );
+      expect(calls, 3);
+    });
+
+    test('un 401 no se reintenta', () async {
+      var calls = 0;
+      final client = _clientFor(sequence([401], onCall: () => calls++), retryDelays: twoRetries);
+
+      await expectLater(client.stream(_request).toList(), throwsA(isA<UnauthorizedException>()));
+      expect(calls, 1);
+    });
+
+    test('un error de red se reintenta', () async {
+      var calls = 0;
+      final mock = MockClient.streaming((request, _) async {
+        calls++;
+        if (calls == 1) throw http.ClientException('sin conexión');
+        return http.StreamedResponse(Stream.value(utf8.encode(_sse(['[DONE]']))), 200);
+      });
+      await _clientFor(mock, retryDelays: twoRetries).stream(_request).toList();
+
+      expect(calls, 2);
+    });
+
+    test('send también reintenta', () async {
+      var calls = 0;
+      final mock = MockClient((_) async {
+        calls++;
+        if (calls == 1) return http.Response('x', 502);
+        return http.Response(jsonEncode({'choices': [{'message': {'content': 'hola'}}]}), 200);
+      });
+      final response = await _clientFor(mock, retryDelays: twoRetries).send(_request);
+
+      expect(calls, 2);
+      expect(response.content, 'hola');
+    });
+
+    test('respeta Retry-After del servidor en lugar del backoff', () async {
+      final started = DateTime.now();
+      final client = _clientFor(
+        sequence([429, 200], headers: {'retry-after': '1'}),
+        retryDelays: const [Duration(seconds: 30)],
+      );
+      await client.stream(_request).toList();
+
+      expect(DateTime.now().difference(started), lessThan(const Duration(seconds: 5)));
     });
   });
 }

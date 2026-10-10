@@ -18,10 +18,15 @@ class DynamicOpenAIClient {
   final http.Client _httpClient;
   final Duration timeout;
 
+  /// Waits before each retry of a request that failed before any response
+  /// body was read (network error, timeout, 429, 5xx). One entry = one retry.
+  final List<Duration> retryDelays;
+
   DynamicOpenAIClient({
     SecureConfigStorage? configStorage,
     http.Client? httpClient,
     this.timeout = const Duration(seconds: 60),
+    this.retryDelays = const [Duration(seconds: 1), Duration(seconds: 3)],
   })  : _configStorage = configStorage ?? SecureConfigStorage(),
         _httpClient = httpClient ?? http.Client();
 
@@ -48,24 +53,15 @@ class DynamicOpenAIClient {
     final config = await _requireConfig();
     final body = jsonEncode(request.copyWith(stream: false).toJson());
 
-    http.Response response;
-    try {
-      response = await _httpClient
-          .post(
-            _completionsUri(config.baseUrl),
-            headers: _headers(config.apiKey),
-            body: body,
-          )
-          .timeout(timeout);
-    } on TimeoutException {
-      throw const RequestTimeoutException();
-    } on SocketException {
-      throw const NetworkUnavailableException();
-    } on http.ClientException {
-      throw const NetworkUnavailableException();
-    }
-
-    _throwIfError(response.statusCode, response.body);
+    final response = await _withRetry(() async {
+      final response = await _guardNetwork(
+        () => _httpClient
+            .post(_completionsUri(config.baseUrl), headers: _headers(config.apiKey), body: body)
+            .timeout(timeout),
+      );
+      _throwIfError(response.statusCode, response.body, response.headers);
+      return response;
+    });
 
     try {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -80,25 +76,21 @@ class DynamicOpenAIClient {
   /// `[DONE]`. Cancel by cancelling the returned stream's subscription.
   Stream<ChatCompletionChunk> stream(ChatCompletionRequest request) async* {
     final config = await _requireConfig();
-    final streamedRequest = http.Request('POST', _completionsUri(config.baseUrl));
-    streamedRequest.headers.addAll(_headers(config.apiKey));
-    streamedRequest.body = jsonEncode(request.copyWith(stream: true).toJson());
+    final body = jsonEncode(request.copyWith(stream: true).toJson());
 
-    http.StreamedResponse response;
-    try {
-      response = await _httpClient.send(streamedRequest).timeout(timeout);
-    } on TimeoutException {
-      throw const RequestTimeoutException();
-    } on SocketException {
-      throw const NetworkUnavailableException();
-    } on http.ClientException {
-      throw const NetworkUnavailableException();
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final errorBody = await response.stream.bytesToString();
-      _throwIfError(response.statusCode, errorBody);
-    }
+    // Retries only cover opening the connection; once the first byte of the
+    // body is read, a failure is surfaced so the editor keeps what arrived.
+    final response = await _withRetry(() async {
+      final streamedRequest = http.Request('POST', _completionsUri(config.baseUrl))
+        ..headers.addAll(_headers(config.apiKey))
+        ..body = body;
+      final response = await _guardNetwork(() => _httpClient.send(streamedRequest).timeout(timeout));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final errorBody = await response.stream.bytesToString();
+        _throwIfError(response.statusCode, errorBody, response.headers);
+      }
+      return response;
+    });
 
     final lines = response.stream.transform(utf8.decoder).transform(const LineSplitter());
 
@@ -124,10 +116,44 @@ class DynamicOpenAIClient {
       }
     } on TimeoutException {
       throw const RequestTimeoutException();
+    } on SocketException {
+      throw const NetworkUnavailableException();
+    } on http.ClientException {
+      throw const NetworkUnavailableException();
     }
   }
 
-  void _throwIfError(int statusCode, String body) {
+  Future<T> _guardNetwork<T>(Future<T> Function() call) async {
+    try {
+      return await call();
+    } on TimeoutException {
+      throw const RequestTimeoutException();
+    } on SocketException {
+      throw const NetworkUnavailableException();
+    } on http.ClientException {
+      throw const NetworkUnavailableException();
+    }
+  }
+
+  Future<T> _withRetry<T>(Future<T> Function() attempt) async {
+    for (var i = 0;; i++) {
+      try {
+        return await attempt();
+      } on ApiClientException catch (e) {
+        if (i >= retryDelays.length || !_isRetryable(e)) rethrow;
+        final serverDelay = e is ServerErrorException ? e.retryAfter : null;
+        await Future<void>.delayed(serverDelay ?? retryDelays[i]);
+      }
+    }
+  }
+
+  bool _isRetryable(ApiClientException e) => switch (e) {
+        NetworkUnavailableException() || RequestTimeoutException() => true,
+        ServerErrorException(:final statusCode) => statusCode == 429 || statusCode >= 500,
+        _ => false,
+      };
+
+  void _throwIfError(int statusCode, String body, Map<String, String> headers) {
     if (statusCode >= 200 && statusCode < 300) return;
 
     String? serverMessage;
@@ -146,7 +172,14 @@ class DynamicOpenAIClient {
     if (statusCode == 401 || statusCode == 403) {
       throw UnauthorizedException(serverMessage: serverMessage);
     }
-    throw ServerErrorException(statusCode, serverMessage: serverMessage);
+    throw ServerErrorException(statusCode, serverMessage: serverMessage, retryAfter: _retryAfter(headers));
+  }
+
+  /// `Retry-After` in seconds, capped so a bad header can't stall the editor.
+  Duration? _retryAfter(Map<String, String> headers) {
+    final seconds = int.tryParse(headers['retry-after'] ?? '');
+    if (seconds == null || seconds < 0) return null;
+    return Duration(seconds: seconds.clamp(0, 10));
   }
 
   void dispose() => _httpClient.close();

@@ -74,7 +74,7 @@ void main() {
   });
 
   test('las relaciones usan el nombre del otro personaje, no su id', () async {
-    final tomas = const CharacterModel(id: 'c2', name: 'Tomás');
+    const tomas = CharacterModel(id: 'c2', name: 'Tomás');
     final linked = mara.copyWith(
       relationships: const [CharacterRelationship(characterId: 'c2', description: 'hermano menor')],
     );
