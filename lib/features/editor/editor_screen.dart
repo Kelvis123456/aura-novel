@@ -8,6 +8,7 @@ import '../projects/models/story_node_model.dart';
 import '../projects/project_manager_screen.dart';
 import '../projects/project_repository.dart';
 import '../settings/api_settings_screen.dart';
+import 'draft_autosaver.dart';
 import 'editor_controller.dart';
 
 /// Full-screen immersive writing canvas for "AURA NOVEL": streams AI
@@ -37,10 +38,12 @@ class EditorScreen extends StatefulWidget {
   State<EditorScreen> createState() => _EditorScreenState();
 }
 
-class _EditorScreenState extends State<EditorScreen> {
+class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver {
   late final EditorController _controller;
   late ProjectRepository _projectRepository;
   EditorDocumentBinding? _binding;
+  DraftAutosaver? _autosaver;
+  final _undoController = UndoHistoryController();
   final _canvasScrollController = ScrollController();
   final _promptFieldController = TextEditingController();
   final _promptFocusNode = FocusNode();
@@ -68,9 +71,38 @@ class _EditorScreenState extends State<EditorScreen> {
     if (widget.initialContent != null) {
       _controller.textController.text = widget.initialContent!;
     }
+    _controller.startSession();
+
+    final binding = _binding;
+    if (binding != null) {
+      _autosaver = DraftAutosaver(
+        repository: _projectRepository,
+        chapterId: binding.chapterId,
+        nodeId: binding.nodeId,
+        savedContent: widget.initialContent ?? '',
+      );
+      WidgetsBinding.instance.addObserver(this);
+      _recoverDraft();
+    }
+  }
+
+  Future<void> _recoverDraft() async {
+    final draft = await _autosaver?.recover();
+    if (draft == null || !mounted) return;
+    _controller.textController.text = draft;
+    _controller.startSession();
+    _showSnack('Recuperé lo que habías escrito sin guardar.');
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _autosaver?.flush();
+    }
   }
 
   void _onControllerChanged() {
+    _autosaver?.onTextChanged(_controller.textController.text);
     setState(() {});
     if (_controller.isGenerating) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -82,6 +114,10 @@ class _EditorScreenState extends State<EditorScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _autosaver?.flush();
+    _autosaver?.dispose();
+    _undoController.dispose();
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     _canvasScrollController.dispose();
@@ -116,6 +152,7 @@ class _EditorScreenState extends State<EditorScreen> {
       timestamp: DateTime.now(),
     );
     await _projectRepository.saveNode(node);
+    await _autosaver?.markSaved(nodeId: node.id, content: node.content);
     if (!mounted) return;
     setState(() => _binding = binding.withNode(node.id));
     _showSnack('Versión guardada.');
@@ -219,9 +256,12 @@ class _EditorScreenState extends State<EditorScreen> {
         child: Column(
           children: [
             if (!distractionFree) _buildTopBar(accent),
+            if (!distractionFree && _controller.wordGoal != null) _buildGoalBar(accent),
             if (!distractionFree && _controller.status == GenerationStatus.error)
               _buildErrorBanner(),
             Expanded(child: _buildCanvas(accent)),
+            if (!distractionFree && _controller.pendingSuggestion != null && !_controller.isGenerating)
+              _buildSuggestionBar(accent),
             if (!distractionFree) _buildPromptBar(accent),
           ],
         ),
@@ -249,12 +289,40 @@ class _EditorScreenState extends State<EditorScreen> {
           ),
           Icon(Icons.circle, size: 8, color: _controller.isGenerating ? accent : Colors.white24),
           const SizedBox(width: 8),
-          Text(
-            '${_controller.wordCount} palabras · ${_controller.estimatedReadingMinutes} min de lectura'
-            '${_controller.estimatedSessionTokens > 0 ? ' · ~${_controller.estimatedSessionTokens} tokens IA' : ''}',
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          Flexible(
+            child: GestureDetector(
+              onTap: _editWordGoal,
+              child: Text(
+                '${_controller.wordCount} palabras · ${_controller.estimatedReadingMinutes} min de lectura'
+                '${_controller.estimatedSessionTokens > 0 ? ' · ~${_controller.estimatedSessionTokens} tokens IA' : ''}',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ),
           ),
           const Spacer(),
+          ValueListenableBuilder<UndoHistoryValue>(
+            valueListenable: _undoController,
+            builder: (context, value, _) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.undo, size: 20),
+                  color: Colors.white54,
+                  disabledColor: Colors.white12,
+                  tooltip: 'Deshacer',
+                  onPressed: value.canUndo ? _undoController.undo : null,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.redo, size: 20),
+                  color: Colors.white54,
+                  disabledColor: Colors.white12,
+                  tooltip: 'Rehacer',
+                  onPressed: value.canRedo ? _undoController.redo : null,
+                ),
+              ],
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.bookmark_add_outlined, color: Colors.white54, size: 20),
             tooltip: _binding == null ? 'Abre este capítulo desde "Mis Proyectos" para guardar versiones' : 'Guardar versión',
@@ -271,6 +339,90 @@ class _EditorScreenState extends State<EditorScreen> {
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => ApiSettingsScreen(accentColor: accent)),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editWordGoal() async {
+    final field = TextEditingController(text: _controller.wordGoal?.toString() ?? '');
+    final accent = widget.accentColor;
+    final goal = await showDialog<int?>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: const Text('Meta de palabras', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: field,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Palabras para esta sesión',
+            labelStyle: TextStyle(color: Colors.white54),
+            helperText: 'Cuenta solo lo que escribas desde que abriste el capítulo.',
+            helperStyle: TextStyle(color: Colors.white38),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(0),
+            child: const Text('Quitar meta', style: TextStyle(color: Colors.white54)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(int.tryParse(field.text.trim()) ?? 0),
+            style: FilledButton.styleFrom(backgroundColor: accent),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    field.dispose();
+    if (goal != null) _controller.setWordGoal(goal);
+  }
+
+  Widget _buildGoalBar(Color accent) {
+    final goal = _controller.wordGoal!;
+    final written = _controller.wordsWrittenThisSession;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: LinearProgressIndicator(
+              value: (written / goal).clamp(0.0, 1.0),
+              minHeight: 2,
+              color: accent,
+              backgroundColor: Colors.white12,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            written >= goal ? 'Meta cumplida · $written' : '$written / $goal',
+            style: TextStyle(color: written >= goal ? accent : Colors.white38, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionBar(Color accent) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text('Texto de la IA agregado', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          ),
+          TextButton(
+            onPressed: _controller.discardSuggestion,
+            child: const Text('Descartar', style: TextStyle(color: Colors.white54)),
+          ),
+          FilledButton(
+            onPressed: _controller.acceptSuggestion,
+            style: FilledButton.styleFrom(backgroundColor: accent),
+            child: const Text('Aceptar'),
           ),
         ],
       ),
@@ -379,6 +531,7 @@ class _EditorScreenState extends State<EditorScreen> {
         child: TextField(
           controller: _controller.textController,
           scrollController: _canvasScrollController,
+          undoController: _undoController,
           maxLines: null,
           expands: true,
           textAlignVertical: TextAlignVertical.top,
