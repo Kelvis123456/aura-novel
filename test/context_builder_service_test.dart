@@ -81,4 +81,38 @@ void main() {
     final message = await serviceWith(characters: [linked, tomas]).buildContextMessage('Mara respiró hondo.');
     expect(message!.content, contains('Tomás: hermano menor'));
   });
+
+  group('tope de tamaño', () {
+    final longMotivation = 'x' * 400;
+
+    test('descarta entradas que no caben, sin cortarlas a la mitad', () async {
+      final chars = [
+        for (var i = 0; i < 20; i++) CharacterModel(id: 'c$i', name: 'Pj$i', motivation: longMotivation),
+      ];
+      final text = chars.map((c) => c.name).join(' ');
+      final message = await serviceWith(characters: chars).buildContextMessage(text, maxChars: 1000);
+
+      expect(message!.content.length, lessThanOrEqualTo(1000));
+      expect(message.content, contains('Pj0'));
+      expect(message.content, isNot(contains('Pj19')));
+    });
+
+    test('las entradas forzadas se quedan aunque haya otras antes en la lista', () async {
+      final chars = [
+        for (var i = 0; i < 10; i++) CharacterModel(id: 'c$i', name: 'Pj$i', motivation: longMotivation),
+        CharacterModel(id: 'pin', name: 'Fijado', motivation: longMotivation, forceInclude: true),
+      ];
+      final text = chars.map((c) => c.name).join(' ');
+      final message = await serviceWith(characters: chars).buildContextMessage(text, maxChars: 900);
+
+      expect(message!.content, contains('Fijado'));
+    });
+
+    test('si nada cabe devuelve null', () async {
+      final big = CharacterModel(id: 'c', name: 'Mara', motivation: longMotivation);
+      final message = await serviceWith(characters: [big]).buildContextMessage('Mara', maxChars: 100);
+
+      expect(message, isNull);
+    });
+  });
 }
