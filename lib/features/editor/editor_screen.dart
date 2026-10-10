@@ -244,7 +244,8 @@ class _EditorScreenState extends State<EditorScreen> {
           Icon(Icons.circle, size: 8, color: _controller.isGenerating ? accent : Colors.white24),
           const SizedBox(width: 8),
           Text(
-            '${_controller.wordCount} palabras · ${_controller.estimatedReadingMinutes} min de lectura',
+            '${_controller.wordCount} palabras · ${_controller.estimatedReadingMinutes} min de lectura'
+            '${_controller.estimatedSessionTokens > 0 ? ' · ~${_controller.estimatedSessionTokens} tokens IA' : ''}',
             style: const TextStyle(color: Colors.white54, fontSize: 12),
           ),
           const Spacer(),

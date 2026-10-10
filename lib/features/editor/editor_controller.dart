@@ -35,6 +35,7 @@ extension ToneShiftPreset on ToneShift {
 
 const _contextWindowChars = 4000;
 const _wordsPerMinute = 200;
+const _charsPerToken = 4;
 
 /// Drives the immersive editor: owns the document buffer, streams AI
 /// generations from [DynamicOpenAIClient] straight into it token-by-token,
@@ -66,6 +67,12 @@ class EditorController extends ChangeNotifier {
 
   GenerationStatus status = GenerationStatus.idle;
   String? errorMessage;
+
+  /// Rough token spend of this editing session (about 4 characters per token),
+  /// shown so the author notices cost on their own API key. Providers report
+  /// exact usage differently in streams, so this stays an estimate.
+  int estimatedSessionTokens = 0;
+  int _generatedChars = 0;
   bool distractionFreeMode = false;
 
   StreamSubscription<ChatCompletionChunk>? _subscription;
@@ -229,6 +236,9 @@ class EditorController extends ChangeNotifier {
       return;
     }
 
+    estimatedSessionTokens +=
+        request.messages.fold<int>(0, (sum, m) => sum + m.content.length) ~/ _charsPerToken;
+    _generatedChars = 0;
     _deleteRange(start, end);
     _cursor = start;
     status = GenerationStatus.generating;
@@ -239,16 +249,20 @@ class EditorController extends ChangeNotifier {
       (chunk) {
         if (chunk.isDone || chunk.deltaContent.isEmpty) return;
         _insertAtCursor(chunk.deltaContent);
+        _generatedChars += chunk.deltaContent.length;
       },
       onError: (error) {
         status = GenerationStatus.error;
-        errorMessage =
+        final reason =
             error is ApiClientException ? error.message : 'Error inesperado durante la generación.';
+        errorMessage = _generatedChars > 0 ? '$reason Se conservó el texto que ya había llegado.' : reason;
+        estimatedSessionTokens += _generatedChars ~/ _charsPerToken;
         notifyListeners();
       },
       onDone: () {
         if (status == GenerationStatus.generating) {
           status = GenerationStatus.idle;
+          estimatedSessionTokens += _generatedChars ~/ _charsPerToken;
           notifyListeners();
         }
       },
@@ -262,6 +276,7 @@ class EditorController extends ChangeNotifier {
     _subscription = null;
     if (status == GenerationStatus.generating) {
       status = GenerationStatus.paused;
+      estimatedSessionTokens += _generatedChars ~/ _charsPerToken;
       notifyListeners();
     }
   }
