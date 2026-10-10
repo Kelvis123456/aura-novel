@@ -178,6 +178,34 @@ class ProjectRepository {
     return rows.isEmpty ? null : StoryNodeModel.fromMap(rows.first);
   }
 
+  // ---- Backup ---------------------------------------------------------------
+
+  /// Raw rows of every table that holds the author's work. Drafts are left
+  /// out: they are transient and tied to ids that may not exist elsewhere.
+  Future<Map<String, List<Map<String, Object?>>>> exportAll() async {
+    final db = await _database;
+    return {
+      'projects': await db.query('projects'),
+      'chapters': await db.query('chapters'),
+      'story_nodes': await db.query('story_nodes'),
+    };
+  }
+
+  /// Merges [data] into the DB: rows with an existing id are replaced, the
+  /// rest are kept. All or nothing, so a bad file can't leave half a restore.
+  Future<void> importAll(Map<String, List<Map<String, Object?>>> data) async {
+    final db = await _database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final table in const ['projects', 'chapters', 'story_nodes']) {
+        for (final row in data[table] ?? const <Map<String, Object?>>[]) {
+          batch.insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   // ---- Drafts -------------------------------------------------------------
 
   /// One unsaved working copy per chapter, written by the editor's autosave
