@@ -11,7 +11,7 @@ import 'models/story_node_model.dart';
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
   static final _random = Random();
 
   final String? _databasePath;
@@ -56,15 +56,28 @@ class ProjectRepository {
             timestamp TEXT NOT NULL
           )
         ''');
+        await _createDraftsTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // One block per version, so a DB two versions behind runs both.
         if (oldVersion < 2) {
           await db.execute("ALTER TABLE chapters ADD COLUMN summary TEXT NOT NULL DEFAULT ''");
         }
+        if (oldVersion < 3) {
+          await _createDraftsTable(db);
+        }
       },
     );
   }
+
+  Future<void> _createDraftsTable(Database db) => db.execute('''
+    CREATE TABLE drafts (
+      chapter_id TEXT PRIMARY KEY,
+      node_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  ''');
 
   static String generateId() =>
       '${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
@@ -96,6 +109,9 @@ class ProjectRepository {
     for (final chapter in chapters) {
       batch.delete('story_nodes', where: 'chapter_id = ?', whereArgs: [chapter['id']]);
     }
+    for (final chapter in chapters) {
+      batch.delete('drafts', where: 'chapter_id = ?', whereArgs: [chapter['id']]);
+    }
     batch.delete('chapters', where: 'project_id = ?', whereArgs: [projectId]);
     batch.delete('projects', where: 'id = ?', whereArgs: [projectId]);
     await batch.commit(noResult: true);
@@ -124,6 +140,7 @@ class ProjectRepository {
     final db = await _database;
     final batch = db.batch();
     batch.delete('story_nodes', where: 'chapter_id = ?', whereArgs: [chapterId]);
+    batch.delete('drafts', where: 'chapter_id = ?', whereArgs: [chapterId]);
     batch.delete('chapters', where: 'id = ?', whereArgs: [chapterId]);
     await batch.commit(noResult: true);
   }
@@ -161,8 +178,58 @@ class ProjectRepository {
     return rows.isEmpty ? null : StoryNodeModel.fromMap(rows.first);
   }
 
+  // ---- Drafts -------------------------------------------------------------
+
+  /// One unsaved working copy per chapter, written by the editor's autosave
+  /// so a crash or a killed app doesn't lose what was typed since the last
+  /// "Guardar versión".
+  Future<void> saveDraft(ChapterDraft draft) async {
+    final db = await _database;
+    await db.insert('drafts', draft.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<ChapterDraft?> getDraft(String chapterId) async {
+    final db = await _database;
+    final rows = await db.query('drafts', where: 'chapter_id = ?', whereArgs: [chapterId], limit: 1);
+    return rows.isEmpty ? null : ChapterDraft.fromMap(rows.first);
+  }
+
+  Future<void> deleteDraft(String chapterId) async {
+    final db = await _database;
+    await db.delete('drafts', where: 'chapter_id = ?', whereArgs: [chapterId]);
+  }
+
   Future<void> close() async {
     await _db?.close();
     _db = null;
   }
+}
+
+/// Unsaved text of a chapter, tied to the story node it was edited from.
+class ChapterDraft {
+  final String chapterId;
+  final String nodeId;
+  final String content;
+  final DateTime updatedAt;
+
+  const ChapterDraft({
+    required this.chapterId,
+    required this.nodeId,
+    required this.content,
+    required this.updatedAt,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'chapter_id': chapterId,
+        'node_id': nodeId,
+        'content': content,
+        'updated_at': updatedAt.toIso8601String(),
+      };
+
+  factory ChapterDraft.fromMap(Map<String, dynamic> map) => ChapterDraft(
+        chapterId: map['chapter_id'] as String,
+        nodeId: map['node_id'] as String,
+        content: map['content'] as String? ?? '',
+        updatedAt: DateTime.parse(map['updated_at'] as String),
+      );
 }
