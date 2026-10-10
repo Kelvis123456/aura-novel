@@ -12,6 +12,7 @@ import 'editor_document_binding.dart';
 import 'export_dialog.dart';
 import 'models/project_model.dart';
 import 'models/story_node_model.dart';
+import 'project_cards.dart';
 import 'project_controller.dart';
 
 /// Entry point for project management: list projects → drill into a
@@ -211,7 +212,7 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
                     itemCount: _controller.projects.length,
                     itemBuilder: (context, index) {
                       final project = _controller.projects[index];
-                      return _ProjectCard(
+                      return ProjectCard(
                         project: project,
                         accent: accent,
                         onTap: () => Navigator.of(context).push(
@@ -395,7 +396,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
                     itemCount: _chapters.length,
                     itemBuilder: (context, index) {
                       final chapter = _chapters[index];
-                      return _ChapterCard(
+                      return ChapterCard(
                         chapter: chapter,
                         accent: accent,
                         onTap: () => Navigator.of(context).push(
@@ -594,153 +595,6 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
               label: const Text('Empezar a escribir'),
             )
           : null,
-    );
-  }
-}
-
-class _ProjectCard extends StatelessWidget {
-  final ProjectModel project;
-  final Color accent;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  const _ProjectCard({required this.project, required this.accent, required this.onTap, required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.menu_book_outlined, color: accent, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        project.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      if (project.synopsis.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            project.synopsis,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white60, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white38),
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChapterCard extends StatelessWidget {
-  final ChapterModel chapter;
-  final Color accent;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-  final VoidCallback onSummarize;
-
-  const _ChapterCard({
-    required this.chapter,
-    required this.accent,
-    required this.onTap,
-    required this.onDelete,
-    required this.onSummarize,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: accent.withValues(alpha: 0.2),
-                  child: Text('${chapter.order + 1}', style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        chapter.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                      if (chapter.summary.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            chapter.summary,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white38, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.notes, size: 18, color: chapter.summary.isEmpty ? Colors.white38 : accent),
-                  tooltip: chapter.summary.isEmpty ? 'Resumir con IA' : 'Actualizar resumen',
-                  onPressed: onSummarize,
-                ),
-                const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white38),
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
