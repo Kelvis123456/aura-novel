@@ -92,4 +92,105 @@ void main() {
     expect(controller.estimatedSessionTokens, greaterThanOrEqualTo(100));
     controller.dispose();
   });
+
+  group('sugerencia pendiente', () {
+    test('tras generar queda pendiente y aceptar la limpia sin tocar el texto', () async {
+      final controller = _controllerWith(() => Stream.fromIterable([_chunk('IA')]));
+      controller.textController.text = 'Hola ';
+
+      await controller.continueStory();
+      await _settle();
+      expect(controller.pendingSuggestion?.text, 'IA');
+
+      controller.acceptSuggestion();
+      expect(controller.pendingSuggestion, isNull);
+      expect(controller.textController.text, 'Hola IA');
+      controller.dispose();
+    });
+
+    test('descartar una continuación quita lo agregado', () async {
+      final controller = _controllerWith(() => Stream.fromIterable([_chunk('IA')]));
+      controller.textController.text = 'Hola ';
+
+      await controller.continueStory();
+      await _settle();
+      controller.discardSuggestion();
+
+      expect(controller.textController.text, 'Hola ');
+      controller.dispose();
+    });
+
+    test('descartar una reescritura devuelve el texto original', () async {
+      final controller = _controllerWith(() => Stream.fromIterable([_chunk('nueva')]));
+      controller.textController.value = const TextEditingValue(
+        text: 'antes vieja después',
+        selection: TextSelection(baseOffset: 6, extentOffset: 11),
+      );
+
+      await controller.rewriteSelection();
+      await _settle();
+      controller.discardSuggestion();
+
+      expect(controller.textController.text, 'antes vieja después');
+      controller.dispose();
+    });
+
+    test('si el autor editó el texto generado, descartar no toca nada', () async {
+      final controller = _controllerWith(() => Stream.fromIterable([_chunk('IA')]));
+      controller.textController.text = 'Hola ';
+
+      await controller.continueStory();
+      await _settle();
+      controller.textController.text = 'Hola XY editado a mano';
+      controller.discardSuggestion();
+
+      expect(controller.textController.text, 'Hola XY editado a mano');
+      expect(controller.pendingSuggestion, isNull);
+      controller.dispose();
+    });
+
+    test('un stream cortado con texto parcial también queda por revisar', () async {
+      final controller = _controllerWith(() async* {
+        yield _chunk('Mitad');
+        throw const NetworkUnavailableException();
+      });
+
+      await controller.continueStory();
+      await _settle();
+
+      expect(controller.pendingSuggestion?.text, 'Mitad');
+      controller.dispose();
+    });
+  });
+
+  group('meta de palabras', () {
+    test('cuenta solo lo escrito desde startSession', () {
+      final controller = _controllerWith(() => const Stream.empty());
+      controller.textController.text = 'uno dos tres';
+      controller.startSession();
+      controller.textController.text = 'uno dos tres cuatro cinco';
+
+      expect(controller.wordsWrittenThisSession, 2);
+      controller.dispose();
+    });
+
+    test('borrar texto no da un conteo negativo', () {
+      final controller = _controllerWith(() => const Stream.empty());
+      controller.textController.text = 'uno dos tres';
+      controller.startSession();
+      controller.textController.text = 'uno';
+
+      expect(controller.wordsWrittenThisSession, 0);
+      controller.dispose();
+    });
+
+    test('una meta de 0 o negativa la quita', () {
+      final controller = _controllerWith(() => const Stream.empty());
+      controller.setWordGoal(500);
+      expect(controller.wordGoal, 500);
+      controller.setWordGoal(0);
+      expect(controller.wordGoal, isNull);
+      controller.dispose();
+    });
+  });
 }

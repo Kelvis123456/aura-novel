@@ -33,6 +33,16 @@ extension ToneShiftPreset on ToneShift {
       };
 }
 
+/// A generation's result awaiting accept/discard: [text] was inserted at
+/// [start], replacing [original] (empty for plain continuations).
+class AiSuggestion {
+  final int start;
+  final String text;
+  final String original;
+
+  const AiSuggestion({required this.start, required this.text, required this.original});
+}
+
 const _contextWindowChars = 4000;
 const _wordsPerMinute = 200;
 const _charsPerToken = 4;
@@ -63,6 +73,17 @@ class EditorController extends ChangeNotifier {
     textController.addListener(notifyListeners);
   }
 
+  /// Marks the current document as the baseline for the session goal. Call
+  /// after loading the chapter text.
+  void startSession() => _startingWordCount = wordCount;
+
+  int get wordsWrittenThisSession => (wordCount - _startingWordCount).clamp(0, 1 << 30);
+
+  void setWordGoal(int? goal) {
+    wordGoal = (goal == null || goal <= 0) ? null : goal;
+    notifyListeners();
+  }
+
   /// Owns both the document text and the current selection/cursor, so
   /// contextual actions (rewrite/expand/tone) and streaming insertion share
   /// a single source of truth.
@@ -75,7 +96,18 @@ class EditorController extends ChangeNotifier {
   /// shown so the author notices cost on their own API key. Providers report
   /// exact usage differently in streams, so this stays an estimate.
   int estimatedSessionTokens = 0;
-  int _generatedChars = 0;
+
+  /// What the last generation inserted, until the author accepts or discards
+  /// it. Null when there is nothing to review.
+  AiSuggestion? pendingSuggestion;
+  final StringBuffer _generated = StringBuffer();
+  int _suggestionStart = 0;
+  String _suggestionOriginal = '';
+
+  /// Words in the document when this controller started, so a session goal
+  /// counts what was written now and not what was already there.
+  int _startingWordCount = 0;
+  int? wordGoal;
   bool distractionFreeMode = false;
 
   StreamSubscription<ChatCompletionChunk>? _subscription;
@@ -241,7 +273,12 @@ class EditorController extends ChangeNotifier {
 
     estimatedSessionTokens +=
         request.messages.fold<int>(0, (sum, m) => sum + m.content.length) ~/ _charsPerToken;
-    _generatedChars = 0;
+
+    // Starting a new generation keeps whatever the last one left.
+    pendingSuggestion = null;
+    _generated.clear();
+    _suggestionStart = start;
+    _suggestionOriginal = textController.text.substring(start, end);
     _deleteRange(start, end);
     _cursor = start;
     status = GenerationStatus.generating;
@@ -252,20 +289,20 @@ class EditorController extends ChangeNotifier {
       (chunk) {
         if (chunk.isDone || chunk.deltaContent.isEmpty) return;
         _insertAtCursor(chunk.deltaContent);
-        _generatedChars += chunk.deltaContent.length;
+        _generated.write(chunk.deltaContent);
       },
       onError: (error) {
         status = GenerationStatus.error;
         final reason =
             error is ApiClientException ? error.message : 'Error inesperado durante la generación.';
-        errorMessage = _generatedChars > 0 ? '$reason Se conservó el texto que ya había llegado.' : reason;
-        estimatedSessionTokens += _generatedChars ~/ _charsPerToken;
+        errorMessage = _generated.isNotEmpty ? '$reason Se conservó el texto que ya había llegado.' : reason;
+        _closeGeneration();
         notifyListeners();
       },
       onDone: () {
         if (status == GenerationStatus.generating) {
           status = GenerationStatus.idle;
-          estimatedSessionTokens += _generatedChars ~/ _charsPerToken;
+          _closeGeneration();
           notifyListeners();
         }
       },
@@ -279,9 +316,47 @@ class EditorController extends ChangeNotifier {
     _subscription = null;
     if (status == GenerationStatus.generating) {
       status = GenerationStatus.paused;
-      estimatedSessionTokens += _generatedChars ~/ _charsPerToken;
+      _closeGeneration();
       notifyListeners();
     }
+  }
+
+  /// Books the tokens of what arrived and, if anything did, offers it for
+  /// review.
+  void _closeGeneration() {
+    estimatedSessionTokens += _generated.length ~/ _charsPerToken;
+    if (_generated.isEmpty) return;
+    pendingSuggestion = AiSuggestion(
+      start: _suggestionStart,
+      text: _generated.toString(),
+      original: _suggestionOriginal,
+    );
+  }
+
+  /// Keeps the generated text and clears the review banner.
+  void acceptSuggestion() {
+    if (pendingSuggestion == null) return;
+    pendingSuggestion = null;
+    notifyListeners();
+  }
+
+  /// Puts the replaced text back. If the author edited the generated span in
+  /// the meantime there is nothing safe to undo, so it only clears the banner.
+  void discardSuggestion() {
+    final suggestion = pendingSuggestion;
+    if (suggestion == null) return;
+    pendingSuggestion = null;
+
+    final text = textController.text;
+    final end = suggestion.start + suggestion.text.length;
+    if (end <= text.length && text.substring(suggestion.start, end) == suggestion.text) {
+      textController.value = textController.value.copyWith(
+        text: text.replaceRange(suggestion.start, end, suggestion.original),
+        selection: TextSelection.collapsed(offset: suggestion.start + suggestion.original.length),
+        composing: TextRange.empty,
+      );
+    }
+    notifyListeners();
   }
 
   void _deleteRange(int start, int end) {
