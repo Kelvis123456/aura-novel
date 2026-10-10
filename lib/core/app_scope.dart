@@ -4,6 +4,7 @@ import 'network/dynamic_openai_client.dart';
 import 'storage/secure_config_storage.dart';
 import '../features/lore/context_builder_service.dart';
 import '../features/lore/lore_repository.dart';
+import '../features/projects/backup_service.dart';
 import '../features/projects/chapter_summary_service.dart';
 import '../features/projects/project_repository.dart';
 
@@ -23,6 +24,7 @@ class AppScope extends InheritedWidget {
   final ContextBuilderService contextBuilder;
   final ProjectRepository projectRepository;
   final ChapterSummaryService chapterSummaryService;
+  final BackupService backupService;
 
   const AppScope({
     super.key,
@@ -32,6 +34,7 @@ class AppScope extends InheritedWidget {
     required this.contextBuilder,
     required this.projectRepository,
     required this.chapterSummaryService,
+    required this.backupService,
     required super.child,
   });
 

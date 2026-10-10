@@ -1,8 +1,12 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/network/exceptions/api_exceptions.dart';
 import '../editor/editor_screen.dart';
+import 'backup_service.dart';
 import 'branch_tree_viewer.dart';
 import 'editor_document_binding.dart';
 import 'export_dialog.dart';
@@ -41,6 +45,44 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
     _controller.removeListener(_onChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _exportBackup() async {
+    final service = AppScope.of(context).backupService;
+    try {
+      await service.exportAndShare();
+    } catch (_) {
+      _showMessage('No se pudo crear la copia de seguridad.');
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    final service = AppScope.of(context).backupService;
+    final picked = await FilePicker.platform.pickFiles(type: FileType.any, withData: true);
+    final bytes = picked?.files.single.bytes;
+    if (bytes == null) return;
+
+    try {
+      final summary = await service.restoreFromJson(utf8.decode(bytes));
+      await _controller.loadProjects();
+      _showMessage(
+        'Restaurado: ${summary.projects} proyectos, ${summary.chapters} capítulos, '
+        '${summary.characters} personajes y ${summary.loreItems} entradas de lore.',
+      );
+    } on BackupFormatException catch (e) {
+      _showMessage(e.message);
+    } on FormatException {
+      _showMessage('El archivo no se pudo leer como texto.');
+    } catch (_) {
+      _showMessage('No se pudo restaurar la copia. No se cambió nada en los datos dañados.');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   Future<void> _createProject() async {
@@ -130,6 +172,18 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Mis Proyectos'),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Copia de seguridad',
+            color: const Color(0xFF1A0B12),
+            onSelected: (value) => value == 'export' ? _exportBackup() : _restoreBackup(),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'export', child: Text('Exportar copia de seguridad')),
+              PopupMenuItem(value: 'restore', child: Text('Restaurar copia de seguridad')),
+            ],
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
