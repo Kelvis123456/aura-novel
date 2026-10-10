@@ -55,7 +55,7 @@ class EditorController extends ChangeNotifier {
   final bool _ownsClient;
   final SecureConfigStorage _storage;
   final ContextBuilderService? _contextBuilder;
-  final Future<ChatMessage?> Function()? _storyContext;
+  final Future<ChatMessage?> Function(int maxChars)? _storyContext;
 
   /// [client]/[storage]/[contextBuilder] are normally the shared instances
   /// from [AppScope] — pass none to let this controller create (and own)
@@ -64,7 +64,7 @@ class EditorController extends ChangeNotifier {
     DynamicOpenAIClient? client,
     SecureConfigStorage? storage,
     ContextBuilderService? contextBuilder,
-    Future<ChatMessage?> Function()? storyContext,
+    Future<ChatMessage?> Function(int maxChars)? storyContext,
   })  : _client = client ?? DynamicOpenAIClient(),
         _ownsClient = client == null,
         _storage = storage ?? SecureConfigStorage(),
@@ -146,7 +146,7 @@ class EditorController extends ChangeNotifier {
       throw const MissingConfigException();
     }
 
-    final resolvedMessages = await _withWorldContext(messages);
+    final resolvedMessages = await _withWorldContext(messages, config.contextChars);
 
     return ChatCompletionRequest(
       model: config.modelId,
@@ -161,10 +161,10 @@ class EditorController extends ChangeNotifier {
   /// Inserts the earlier-chapter recaps and the Lore Studio's world-context
   /// system messages (the latter only if any character/lore entry is detected or pinned) right after the leading
   /// persona system message(s) and before the user's own instruction.
-  Future<List<ChatMessage>> _withWorldContext(List<ChatMessage> messages) async {
+  Future<List<ChatMessage>> _withWorldContext(List<ChatMessage> messages, int maxChars) async {
     final contextMessages = [
-      await _storyContext?.call(),
-      await _contextBuilder?.buildContextMessage(textController.text),
+      await _storyContext?.call(maxChars),
+      await _contextBuilder?.buildContextMessage(textController.text, maxChars: maxChars),
     ].whereType<ChatMessage>().toList();
     if (contextMessages.isEmpty) return messages;
 

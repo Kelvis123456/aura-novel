@@ -4,23 +4,53 @@ import 'package:aura_novel/core/network/dynamic_openai_client.dart';
 import 'package:aura_novel/core/network/exceptions/api_exceptions.dart';
 import 'package:aura_novel/core/network/models/chat_completion_request.dart';
 import 'package:aura_novel/core/network/models/chat_completion_response.dart';
+import 'package:aura_novel/core/network/models/chat_message.dart';
 import 'package:aura_novel/core/storage/secure_config_storage.dart';
 import 'package:aura_novel/features/editor/editor_controller.dart';
+import 'package:aura_novel/features/lore/context_builder_service.dart';
+import 'package:aura_novel/features/lore/lore_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeStorage extends SecureConfigStorage {
+  final int contextChars;
+  _FakeStorage({this.contextChars = ApiEndpointConfig.defaultContextChars});
+
   @override
-  Future<ApiEndpointConfig?> load() async =>
-      const ApiEndpointConfig(baseUrl: 'https://api.test', apiKey: 'k', modelId: 'm');
+  Future<ApiEndpointConfig?> load() async => ApiEndpointConfig(
+        baseUrl: 'https://api.test',
+        apiKey: 'k',
+        modelId: 'm',
+        contextChars: contextChars,
+      );
+}
+
+/// Records the budget the editor asks the lore builder for.
+class _RecordingContextBuilder extends ContextBuilderService {
+  int? requestedMaxChars;
+  _RecordingContextBuilder() : super(repository: LoreRepository());
+
+  @override
+  Future<ChatMessage?> buildContextMessage(
+    String fullText, {
+    int scanWindowWords = 400,
+    int maxChars = ContextBuilderService.defaultMaxContextChars,
+  }) async {
+    requestedMaxChars = maxChars;
+    return null;
+  }
 }
 
 class _FakeClient extends DynamicOpenAIClient {
   final Stream<ChatCompletionChunk> Function() source;
-  _FakeClient(this.source);
+  final void Function(ChatCompletionRequest request)? onRequest;
+  _FakeClient(this.source, {this.onRequest});
 
   @override
-  Stream<ChatCompletionChunk> stream(ChatCompletionRequest request) => source();
+  Stream<ChatCompletionChunk> stream(ChatCompletionRequest request) {
+    onRequest?.call(request);
+    return source();
+  }
 }
 
 ChatCompletionChunk _chunk(String text) => ChatCompletionChunk(deltaContent: text);
@@ -190,6 +220,45 @@ void main() {
       expect(controller.wordGoal, 500);
       controller.setWordGoal(0);
       expect(controller.wordGoal, isNull);
+      controller.dispose();
+    });
+  });
+
+  group('tope de contexto configurable', () {
+    test('el lore y los resúmenes reciben el tope de la configuración', () async {
+      final builder = _RecordingContextBuilder();
+      int? storyMaxChars;
+      final controller = EditorController(
+        client: _FakeClient(() => Stream.fromIterable([_chunk('x')])),
+        storage: _FakeStorage(contextChars: 12000),
+        contextBuilder: builder,
+        storyContext: (maxChars) async {
+          storyMaxChars = maxChars;
+          return null;
+        },
+      );
+
+      await controller.continueStory();
+      await _settle();
+
+      expect(builder.requestedMaxChars, 12000);
+      expect(storyMaxChars, 12000);
+      controller.dispose();
+    });
+
+    test('los mensajes de contexto van antes de la instrucción del usuario', () async {
+      ChatCompletionRequest? sent;
+      final controller = EditorController(
+        client: _FakeClient(() => const Stream.empty(), onRequest: (r) => sent = r),
+        storage: _FakeStorage(),
+        storyContext: (_) async => ChatMessage.system('[RESUMEN]'),
+      );
+
+      await controller.continueStory();
+
+      final roles = sent!.messages.map((m) => m.role).toList();
+      expect(sent!.messages.map((m) => m.content), contains('[RESUMEN]'));
+      expect(roles.last, ChatRole.user);
       controller.dispose();
     });
   });

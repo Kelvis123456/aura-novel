@@ -30,3 +30,6 @@ La restauración inserta o reemplaza por id y deja lo demás. Alternativa: vacia
 ## 2026-10-10: `sqflite_common_ffi` solo para tests
 Para probar migraciones y repositorios necesito SQLite real en la máquina de desarrollo. Entra como dev dependency. En CI depende de que el runner tenga `libsqlite3`.
 
+## 2026-10-10: El tope de contexto lo elige el usuario
+El bloque de lore y los resúmenes de capítulos anteriores tenían un tope fijo de 3000 caracteres. Con un modelo gratuito de ventana grande sobra espacio, y con uno pequeño o local 3000 puede ser demasiado. Pasó a ser un ajuste en Ajustes de API (500 a 20000, en pasos de 500) que vale para cada uno por separado. El valor inicial sigue en 3000 y las instalaciones que ya guardaron su config lo usan hasta que lo cambien. Alternativa: detectar la ventana del modelo. No hay forma estándar de pedírsela a un endpoint compatible con OpenAI.
+

@@ -63,9 +63,10 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       contextBuilder: scope.contextBuilder,
       storyContext: widget.documentBinding == null
           ? null
-          : () => scope.chapterSummaryService.buildPriorSummariesMessage(
+          : (maxChars) => scope.chapterSummaryService.buildPriorSummariesMessage(
                 widget.documentBinding!.projectId,
                 widget.documentBinding!.chapterId,
+                maxChars: maxChars,
               ),
     )..addListener(_onControllerChanged);
 
