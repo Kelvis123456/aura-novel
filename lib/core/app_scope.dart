@@ -4,6 +4,7 @@ import 'network/dynamic_openai_client.dart';
 import 'storage/secure_config_storage.dart';
 import '../features/lore/context_builder_service.dart';
 import '../features/lore/lore_repository.dart';
+import '../features/projects/chapter_summary_service.dart';
 import '../features/projects/project_repository.dart';
 
 /// App-wide dependency container. A single instance of each shared resource
@@ -21,6 +22,7 @@ class AppScope extends InheritedWidget {
   final LoreRepository loreRepository;
   final ContextBuilderService contextBuilder;
   final ProjectRepository projectRepository;
+  final ChapterSummaryService chapterSummaryService;
 
   const AppScope({
     super.key,
@@ -29,6 +31,7 @@ class AppScope extends InheritedWidget {
     required this.loreRepository,
     required this.contextBuilder,
     required this.projectRepository,
+    required this.chapterSummaryService,
     required super.child,
   });
 

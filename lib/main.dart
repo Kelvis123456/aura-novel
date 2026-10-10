@@ -6,6 +6,7 @@ import 'core/storage/secure_config_storage.dart';
 import 'features/editor/editor_screen.dart';
 import 'features/lore/context_builder_service.dart';
 import 'features/lore/lore_repository.dart';
+import 'features/projects/chapter_summary_service.dart';
 import 'features/projects/project_repository.dart';
 
 void main() {
@@ -29,6 +30,7 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
   late final LoreRepository _loreRepository;
   late final ContextBuilderService _contextBuilder;
   late final ProjectRepository _projectRepository;
+  late final ChapterSummaryService _chapterSummaryService;
 
   @override
   void initState() {
@@ -38,6 +40,11 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
     _loreRepository = LoreRepository();
     _contextBuilder = ContextBuilderService(repository: _loreRepository);
     _projectRepository = ProjectRepository();
+    _chapterSummaryService = ChapterSummaryService(
+      client: _apiClient,
+      repository: _projectRepository,
+      storage: _configStorage,
+    );
   }
 
   @override
@@ -56,6 +63,7 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       loreRepository: _loreRepository,
       contextBuilder: _contextBuilder,
       projectRepository: _projectRepository,
+      chapterSummaryService: _chapterSummaryService,
       child: MaterialApp(
         title: 'AURA NOVEL',
         debugShowCheckedModeBanner: false,

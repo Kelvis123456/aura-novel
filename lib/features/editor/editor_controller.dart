@@ -45,6 +45,7 @@ class EditorController extends ChangeNotifier {
   final bool _ownsClient;
   final SecureConfigStorage _storage;
   final ContextBuilderService? _contextBuilder;
+  final Future<ChatMessage?> Function()? _storyContext;
 
   /// [client]/[storage]/[contextBuilder] are normally the shared instances
   /// from [AppScope] — pass none to let this controller create (and own)
@@ -53,10 +54,12 @@ class EditorController extends ChangeNotifier {
     DynamicOpenAIClient? client,
     SecureConfigStorage? storage,
     ContextBuilderService? contextBuilder,
+    Future<ChatMessage?> Function()? storyContext,
   })  : _client = client ?? DynamicOpenAIClient(),
         _ownsClient = client == null,
         _storage = storage ?? SecureConfigStorage(),
-        _contextBuilder = contextBuilder {
+        _contextBuilder = contextBuilder,
+        _storyContext = storyContext {
     textController.addListener(notifyListeners);
   }
 
@@ -123,19 +126,19 @@ class EditorController extends ChangeNotifier {
     );
   }
 
-  /// Inserts the Lore Studio's world-context system message (if any
-  /// character/lore entry is detected or pinned) right after the leading
+  /// Inserts the earlier-chapter recaps and the Lore Studio's world-context
+  /// system messages (the latter only if any character/lore entry is detected or pinned) right after the leading
   /// persona system message(s) and before the user's own instruction.
   Future<List<ChatMessage>> _withWorldContext(List<ChatMessage> messages) async {
-    final contextBuilder = _contextBuilder;
-    if (contextBuilder == null) return messages;
-
-    final contextMessage = await contextBuilder.buildContextMessage(textController.text);
-    if (contextMessage == null) return messages;
+    final contextMessages = [
+      await _storyContext?.call(),
+      await _contextBuilder?.buildContextMessage(textController.text),
+    ].whereType<ChatMessage>().toList();
+    if (contextMessages.isEmpty) return messages;
 
     final resolved = List<ChatMessage>.from(messages);
     final insertIndex = resolved.indexWhere((m) => m.role != ChatRole.system);
-    resolved.insert(insertIndex < 0 ? resolved.length : insertIndex, contextMessage);
+    resolved.insertAll(insertIndex < 0 ? resolved.length : insertIndex, contextMessages);
     return resolved;
   }
 

@@ -47,18 +47,24 @@ class ChapterModel {
   final String title;
   final int order;
 
+  /// Short AI-written recap, injected as context when writing later chapters
+  /// so a long novel doesn't have to fit in the prompt. Empty until generated.
+  final String summary;
+
   const ChapterModel({
     required this.id,
     required this.projectId,
     required this.title,
     required this.order,
+    this.summary = '',
   });
 
-  ChapterModel copyWith({String? title, int? order}) => ChapterModel(
+  ChapterModel copyWith({String? title, int? order, String? summary}) => ChapterModel(
         id: id,
         projectId: projectId,
         title: title ?? this.title,
         order: order ?? this.order,
+        summary: summary ?? this.summary,
       );
 
   Map<String, dynamic> toMap() => {
@@ -66,6 +72,7 @@ class ChapterModel {
         'project_id': projectId,
         'title': title,
         'order_index': order,
+        'summary': summary,
       };
 
   factory ChapterModel.fromMap(Map<String, dynamic> map) => ChapterModel(
@@ -73,5 +80,6 @@ class ChapterModel {
         projectId: map['project_id'] as String,
         title: map['title'] as String? ?? '',
         order: map['order_index'] as int? ?? 0,
+        summary: map['summary'] as String? ?? '',
       );
 }

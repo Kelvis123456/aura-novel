@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
+import '../../core/network/exceptions/api_exceptions.dart';
 import '../editor/editor_screen.dart';
 import 'branch_tree_viewer.dart';
 import 'editor_document_binding.dart';
@@ -244,6 +245,25 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     }
   }
 
+  Future<void> _summarize(ChapterModel chapter) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = AppScope.of(context).chapterSummaryService;
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Resumiendo capítulo…'), behavior: SnackBarBehavior.floating),
+    );
+    String message;
+    try {
+      final summary = await service.summarize(chapter);
+      message = summary == null ? 'El capítulo no tiene texto todavía.' : 'Resumen guardado.';
+    } on ApiClientException catch (e) {
+      message = e.message;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+    if (mounted) await _load();
+  }
+
   Future<void> _confirmDeleteChapter(ChapterModel chapter) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -335,6 +355,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
                           ),
                         ),
                         onDelete: () => _confirmDeleteChapter(chapter),
+                        onSummarize: () => _summarize(chapter),
                       );
                     },
                   ),
@@ -593,8 +614,15 @@ class _ChapterCard extends StatelessWidget {
   final Color accent;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback onSummarize;
 
-  const _ChapterCard({required this.chapter, required this.accent, required this.onTap, required this.onDelete});
+  const _ChapterCard({
+    required this.chapter,
+    required this.accent,
+    required this.onTap,
+    required this.onDelete,
+    required this.onSummarize,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -622,12 +650,32 @@ class _ChapterCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    chapter.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        chapter.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      if (chapter.summary.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            chapter.summary,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white38, fontSize: 12),
+                          ),
+                        ),
+                    ],
                   ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.notes, size: 18, color: chapter.summary.isEmpty ? Colors.white38 : accent),
+                  tooltip: chapter.summary.isEmpty ? 'Resumir con IA' : 'Actualizar resumen',
+                  onPressed: onSummarize,
                 ),
                 const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
                 IconButton(

@@ -57,6 +57,12 @@ class _EditorScreenState extends State<EditorScreen> {
       client: scope.apiClient,
       storage: scope.configStorage,
       contextBuilder: scope.contextBuilder,
+      storyContext: widget.documentBinding == null
+          ? null
+          : () => scope.chapterSummaryService.buildPriorSummariesMessage(
+                widget.documentBinding!.projectId,
+                widget.documentBinding!.chapterId,
+              ),
     )..addListener(_onControllerChanged);
 
     if (widget.initialContent != null) {

@@ -11,15 +11,19 @@ import 'models/story_node_model.dart';
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
   static final _random = Random();
 
+  final String? _databasePath;
   Database? _db;
+
+  /// [databasePath] is only for tests; the app uses the default location.
+  ProjectRepository({String? databasePath}) : _databasePath = databasePath;
 
   Future<Database> get _database async => _db ??= await _open();
 
   Future<Database> _open() async {
-    final path = p.join(await getDatabasesPath(), _dbFileName);
+    final path = _databasePath ?? p.join(await getDatabasesPath(), _dbFileName);
     return openDatabase(
       path,
       version: _dbVersion,
@@ -38,7 +42,8 @@ class ProjectRepository {
             id TEXT PRIMARY KEY,
             project_id TEXT NOT NULL,
             title TEXT NOT NULL,
-            order_index INTEGER NOT NULL DEFAULT 0
+            order_index INTEGER NOT NULL DEFAULT 0,
+            summary TEXT NOT NULL DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -51,6 +56,12 @@ class ProjectRepository {
             timestamp TEXT NOT NULL
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // One block per version, so a DB two versions behind runs both.
+        if (oldVersion < 2) {
+          await db.execute("ALTER TABLE chapters ADD COLUMN summary TEXT NOT NULL DEFAULT ''");
+        }
       },
     );
   }
@@ -101,6 +112,11 @@ class ProjectRepository {
     final db = await _database;
     final rows = await db.query('chapters', where: 'project_id = ?', whereArgs: [projectId], orderBy: 'order_index ASC');
     return rows.map(ChapterModel.fromMap).toList();
+  }
+
+  Future<void> updateChapterSummary(String chapterId, String summary) async {
+    final db = await _database;
+    await db.update('chapters', {'summary': summary}, where: 'id = ?', whereArgs: [chapterId]);
   }
 
   /// Deletes the chapter along with every story node under it.
