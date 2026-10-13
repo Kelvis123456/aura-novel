@@ -1,12 +1,18 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
+import '../../core/network/exceptions/api_exceptions.dart';
 import '../editor/editor_screen.dart';
+import 'backup_service.dart';
 import 'branch_tree_viewer.dart';
 import 'editor_document_binding.dart';
 import 'export_dialog.dart';
 import 'models/project_model.dart';
 import 'models/story_node_model.dart';
+import 'project_cards.dart';
 import 'project_controller.dart';
 
 /// Entry point for project management: list projects → drill into a
@@ -40,6 +46,44 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
     _controller.removeListener(_onChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _exportBackup() async {
+    final service = AppScope.of(context).backupService;
+    try {
+      await service.exportAndShare();
+    } catch (_) {
+      _showMessage('No se pudo crear la copia de seguridad.');
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    final service = AppScope.of(context).backupService;
+    final picked = await FilePicker.platform.pickFiles(type: FileType.any, withData: true);
+    final bytes = picked?.files.single.bytes;
+    if (bytes == null) return;
+
+    try {
+      final summary = await service.restoreFromJson(utf8.decode(bytes));
+      await _controller.loadProjects();
+      _showMessage(
+        'Restaurado: ${summary.projects} proyectos, ${summary.chapters} capítulos, '
+        '${summary.characters} personajes y ${summary.loreItems} entradas de lore.',
+      );
+    } on BackupFormatException catch (e) {
+      _showMessage(e.message);
+    } on FormatException {
+      _showMessage('El archivo no se pudo leer como texto.');
+    } catch (_) {
+      _showMessage('No se pudo restaurar la copia. No se cambió nada en los datos dañados.');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   Future<void> _createProject() async {
@@ -129,6 +173,18 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Mis Proyectos'),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Copia de seguridad',
+            color: const Color(0xFF1A0B12),
+            onSelected: (value) => value == 'export' ? _exportBackup() : _restoreBackup(),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'export', child: Text('Exportar copia de seguridad')),
+              PopupMenuItem(value: 'restore', child: Text('Restaurar copia de seguridad')),
+            ],
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -156,7 +212,7 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
                     itemCount: _controller.projects.length,
                     itemBuilder: (context, index) {
                       final project = _controller.projects[index];
-                      return _ProjectCard(
+                      return ProjectCard(
                         project: project,
                         accent: accent,
                         onTap: () => Navigator.of(context).push(
@@ -244,6 +300,25 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     }
   }
 
+  Future<void> _summarize(ChapterModel chapter) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = AppScope.of(context).chapterSummaryService;
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Resumiendo capítulo…'), behavior: SnackBarBehavior.floating),
+    );
+    String message;
+    try {
+      final summary = await service.summarize(chapter);
+      message = summary == null ? 'El capítulo no tiene texto todavía.' : 'Resumen guardado.';
+    } on ApiClientException catch (e) {
+      message = e.message;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+    if (mounted) await _load();
+  }
+
   Future<void> _confirmDeleteChapter(ChapterModel chapter) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -321,7 +396,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
                     itemCount: _chapters.length,
                     itemBuilder: (context, index) {
                       final chapter = _chapters[index];
-                      return _ChapterCard(
+                      return ChapterCard(
                         chapter: chapter,
                         accent: accent,
                         onTap: () => Navigator.of(context).push(
@@ -335,6 +410,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
                           ),
                         ),
                         onDelete: () => _confirmDeleteChapter(chapter),
+                        onSummarize: () => _summarize(chapter),
                       );
                     },
                   ),
@@ -519,126 +595,6 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
               label: const Text('Empezar a escribir'),
             )
           : null,
-    );
-  }
-}
-
-class _ProjectCard extends StatelessWidget {
-  final ProjectModel project;
-  final Color accent;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  const _ProjectCard({required this.project, required this.accent, required this.onTap, required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.menu_book_outlined, color: accent, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        project.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      if (project.synopsis.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            project.synopsis,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white60, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white38),
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChapterCard extends StatelessWidget {
-  final ChapterModel chapter;
-  final Color accent;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  const _ChapterCard({required this.chapter, required this.accent, required this.onTap, required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: accent.withValues(alpha: 0.2),
-                  child: Text('${chapter.order + 1}', style: TextStyle(color: accent, fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    chapter.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white38),
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

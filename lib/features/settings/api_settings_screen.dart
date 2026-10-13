@@ -216,6 +216,23 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 onChanged: (v) => _controller.updatePresencePenalty(v),
                                 accent: accent,
                               ),
+                              _buildSlider(
+                                label: 'Contexto de lore y resúmenes',
+                                value: _controller.contextChars.toDouble(),
+                                min: 500,
+                                max: 20000,
+                                divisions: 39,
+                                displayValue: '${_controller.contextChars} car. (~${_controller.contextChars ~/ 4} tokens)',
+                                onChanged: (v) => _controller.updateContextChars(v.round()),
+                                accent: accent,
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  'Tope para cada uno. Bájalo con modelos de ventana corta, súbelo con los grandes.',
+                                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                                ),
+                              ),
                             ],
                           ),
                         ),

@@ -146,19 +146,27 @@ class ExportService {
     List<ChapterModel> chapters,
     Map<String, String> contentByChapterId,
     String author,
-  ) async {
+  ) {
+    final bytes = buildEpubBytes(project, chapters, contentByChapterId, author);
+    return _writeToTempFile('${_slug(project.title)}.epub', bytes);
+  }
+
+  /// The EPUB zip as bytes, with no file I/O so it can be tested directly.
+  static List<int> buildEpubBytes(
+    ProjectModel project,
+    List<ChapterModel> chapters,
+    Map<String, String> contentByChapterId,
+    String author,
+  ) {
     final archive = Archive();
 
-    void addText(String path, String content) {
+    void addText(String path, String content, {bool compress = true}) {
       final bytes = utf8.encode(content);
-      archive.addFile(ArchiveFile(path, bytes.length, bytes));
+      archive.addFile(ArchiveFile(path, bytes.length, bytes)..compress = compress);
     }
 
-    // Spec asks for this entry to be stored uncompressed as the very first
-    // one; some `archive` package versions expose `ArchiveFile.noCompress`
-    // for that — swap it in here if your pinned version supports it. Most
-    // readers tolerate a compressed mimetype entry in practice.
-    addText('mimetype', 'application/epub+zip');
+    // The EPUB spec wants `mimetype` first and stored uncompressed.
+    addText('mimetype', 'application/epub+zip', compress: false);
 
     addText('META-INF/container.xml', '''<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -224,11 +232,10 @@ $content
   </navMap>
 </ncx>''');
 
-    final zipData = ZipEncoder().encode(archive);
-    return _writeToTempFile('${_slug(project.title)}.epub', zipData!);
+    return ZipEncoder().encode(archive)!;
   }
 
-  String _escapeXml(String input) =>
+  static String _escapeXml(String input) =>
       input.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
   Future<File> _writeToTempFile(String fileName, List<int> bytes) async {

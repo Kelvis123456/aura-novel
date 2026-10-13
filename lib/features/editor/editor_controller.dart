@@ -33,8 +33,19 @@ extension ToneShiftPreset on ToneShift {
       };
 }
 
+/// A generation's result awaiting accept/discard: [text] was inserted at
+/// [start], replacing [original] (empty for plain continuations).
+class AiSuggestion {
+  final int start;
+  final String text;
+  final String original;
+
+  const AiSuggestion({required this.start, required this.text, required this.original});
+}
+
 const _contextWindowChars = 4000;
 const _wordsPerMinute = 200;
+const _charsPerToken = 4;
 
 /// Drives the immersive editor: owns the document buffer, streams AI
 /// generations from [DynamicOpenAIClient] straight into it token-by-token,
@@ -44,6 +55,7 @@ class EditorController extends ChangeNotifier {
   final bool _ownsClient;
   final SecureConfigStorage _storage;
   final ContextBuilderService? _contextBuilder;
+  final Future<ChatMessage?> Function(int maxChars)? _storyContext;
 
   /// [client]/[storage]/[contextBuilder] are normally the shared instances
   /// from [AppScope] — pass none to let this controller create (and own)
@@ -52,11 +64,24 @@ class EditorController extends ChangeNotifier {
     DynamicOpenAIClient? client,
     SecureConfigStorage? storage,
     ContextBuilderService? contextBuilder,
+    Future<ChatMessage?> Function(int maxChars)? storyContext,
   })  : _client = client ?? DynamicOpenAIClient(),
         _ownsClient = client == null,
         _storage = storage ?? SecureConfigStorage(),
-        _contextBuilder = contextBuilder {
+        _contextBuilder = contextBuilder,
+        _storyContext = storyContext {
     textController.addListener(notifyListeners);
+  }
+
+  /// Marks the current document as the baseline for the session goal. Call
+  /// after loading the chapter text.
+  void startSession() => _startingWordCount = wordCount;
+
+  int get wordsWrittenThisSession => (wordCount - _startingWordCount).clamp(0, 1 << 30);
+
+  void setWordGoal(int? goal) {
+    wordGoal = (goal == null || goal <= 0) ? null : goal;
+    notifyListeners();
   }
 
   /// Owns both the document text and the current selection/cursor, so
@@ -66,6 +91,23 @@ class EditorController extends ChangeNotifier {
 
   GenerationStatus status = GenerationStatus.idle;
   String? errorMessage;
+
+  /// Rough token spend of this editing session (about 4 characters per token),
+  /// shown so the author notices cost on their own API key. Providers report
+  /// exact usage differently in streams, so this stays an estimate.
+  int estimatedSessionTokens = 0;
+
+  /// What the last generation inserted, until the author accepts or discards
+  /// it. Null when there is nothing to review.
+  AiSuggestion? pendingSuggestion;
+  final StringBuffer _generated = StringBuffer();
+  int _suggestionStart = 0;
+  String _suggestionOriginal = '';
+
+  /// Words in the document when this controller started, so a session goal
+  /// counts what was written now and not what was already there.
+  int _startingWordCount = 0;
+  int? wordGoal;
   bool distractionFreeMode = false;
 
   StreamSubscription<ChatCompletionChunk>? _subscription;
@@ -104,7 +146,7 @@ class EditorController extends ChangeNotifier {
       throw const MissingConfigException();
     }
 
-    final resolvedMessages = await _withWorldContext(messages);
+    final resolvedMessages = await _withWorldContext(messages, config.contextChars);
 
     return ChatCompletionRequest(
       model: config.modelId,
@@ -116,19 +158,19 @@ class EditorController extends ChangeNotifier {
     );
   }
 
-  /// Inserts the Lore Studio's world-context system message (if any
-  /// character/lore entry is detected or pinned) right after the leading
+  /// Inserts the earlier-chapter recaps and the Lore Studio's world-context
+  /// system messages (the latter only if any character/lore entry is detected or pinned) right after the leading
   /// persona system message(s) and before the user's own instruction.
-  Future<List<ChatMessage>> _withWorldContext(List<ChatMessage> messages) async {
-    final contextBuilder = _contextBuilder;
-    if (contextBuilder == null) return messages;
-
-    final contextMessage = await contextBuilder.buildContextMessage(textController.text);
-    if (contextMessage == null) return messages;
+  Future<List<ChatMessage>> _withWorldContext(List<ChatMessage> messages, int maxChars) async {
+    final contextMessages = [
+      await _storyContext?.call(maxChars),
+      await _contextBuilder?.buildContextMessage(textController.text, maxChars: maxChars),
+    ].whereType<ChatMessage>().toList();
+    if (contextMessages.isEmpty) return messages;
 
     final resolved = List<ChatMessage>.from(messages);
     final insertIndex = resolved.indexWhere((m) => m.role != ChatRole.system);
-    resolved.insert(insertIndex < 0 ? resolved.length : insertIndex, contextMessage);
+    resolved.insertAll(insertIndex < 0 ? resolved.length : insertIndex, contextMessages);
     return resolved;
   }
 
@@ -229,6 +271,14 @@ class EditorController extends ChangeNotifier {
       return;
     }
 
+    estimatedSessionTokens +=
+        request.messages.fold<int>(0, (sum, m) => sum + m.content.length) ~/ _charsPerToken;
+
+    // Starting a new generation keeps whatever the last one left.
+    pendingSuggestion = null;
+    _generated.clear();
+    _suggestionStart = start;
+    _suggestionOriginal = textController.text.substring(start, end);
     _deleteRange(start, end);
     _cursor = start;
     status = GenerationStatus.generating;
@@ -239,16 +289,20 @@ class EditorController extends ChangeNotifier {
       (chunk) {
         if (chunk.isDone || chunk.deltaContent.isEmpty) return;
         _insertAtCursor(chunk.deltaContent);
+        _generated.write(chunk.deltaContent);
       },
       onError: (error) {
         status = GenerationStatus.error;
-        errorMessage =
+        final reason =
             error is ApiClientException ? error.message : 'Error inesperado durante la generación.';
+        errorMessage = _generated.isNotEmpty ? '$reason Se conservó el texto que ya había llegado.' : reason;
+        _closeGeneration();
         notifyListeners();
       },
       onDone: () {
         if (status == GenerationStatus.generating) {
           status = GenerationStatus.idle;
+          _closeGeneration();
           notifyListeners();
         }
       },
@@ -262,8 +316,47 @@ class EditorController extends ChangeNotifier {
     _subscription = null;
     if (status == GenerationStatus.generating) {
       status = GenerationStatus.paused;
+      _closeGeneration();
       notifyListeners();
     }
+  }
+
+  /// Books the tokens of what arrived and, if anything did, offers it for
+  /// review.
+  void _closeGeneration() {
+    estimatedSessionTokens += _generated.length ~/ _charsPerToken;
+    if (_generated.isEmpty) return;
+    pendingSuggestion = AiSuggestion(
+      start: _suggestionStart,
+      text: _generated.toString(),
+      original: _suggestionOriginal,
+    );
+  }
+
+  /// Keeps the generated text and clears the review banner.
+  void acceptSuggestion() {
+    if (pendingSuggestion == null) return;
+    pendingSuggestion = null;
+    notifyListeners();
+  }
+
+  /// Puts the replaced text back. If the author edited the generated span in
+  /// the meantime there is nothing safe to undo, so it only clears the banner.
+  void discardSuggestion() {
+    final suggestion = pendingSuggestion;
+    if (suggestion == null) return;
+    pendingSuggestion = null;
+
+    final text = textController.text;
+    final end = suggestion.start + suggestion.text.length;
+    if (end <= text.length && text.substring(suggestion.start, end) == suggestion.text) {
+      textController.value = textController.value.copyWith(
+        text: text.replaceRange(suggestion.start, end, suggestion.original),
+        selection: TextSelection.collapsed(offset: suggestion.start + suggestion.original.length),
+        composing: TextRange.empty,
+      );
+    }
+    notifyListeners();
   }
 
   void _deleteRange(int start, int end) {

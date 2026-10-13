@@ -11,6 +11,13 @@ class ApiEndpointConfig {
   final double frequencyPenalty;
   final double presencePenalty;
 
+  /// Character budget for the lore block and, separately, for the earlier-
+  /// chapter recaps sent with each generation (about 4 characters per token).
+  /// Small models need it low; large-window ones can take much more.
+  final int contextChars;
+
+  static const defaultContextChars = 3000;
+
   const ApiEndpointConfig({
     required this.baseUrl,
     required this.apiKey,
@@ -19,6 +26,7 @@ class ApiEndpointConfig {
     this.maxTokens = 800,
     this.frequencyPenalty = 0.3,
     this.presencePenalty = 0.2,
+    this.contextChars = defaultContextChars,
   });
 
   bool get isComplete =>
@@ -32,6 +40,7 @@ class ApiEndpointConfig {
     int? maxTokens,
     double? frequencyPenalty,
     double? presencePenalty,
+    int? contextChars,
   }) {
     return ApiEndpointConfig(
       baseUrl: baseUrl ?? this.baseUrl,
@@ -41,6 +50,7 @@ class ApiEndpointConfig {
       maxTokens: maxTokens ?? this.maxTokens,
       frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
       presencePenalty: presencePenalty ?? this.presencePenalty,
+      contextChars: contextChars ?? this.contextChars,
     );
   }
 }
@@ -59,6 +69,7 @@ class SecureConfigStorage {
   static const _keyMaxTokens = 'aura.api.max_tokens';
   static const _keyFrequencyPenalty = 'aura.api.frequency_penalty';
   static const _keyPresencePenalty = 'aura.api.presence_penalty';
+  static const _keyContextChars = 'aura.api.context_chars';
 
   final FlutterSecureStorage _storage;
 
@@ -78,6 +89,7 @@ class SecureConfigStorage {
       _storage.write(key: _keyMaxTokens, value: config.maxTokens.toString()),
       _storage.write(key: _keyFrequencyPenalty, value: config.frequencyPenalty.toString()),
       _storage.write(key: _keyPresencePenalty, value: config.presencePenalty.toString()),
+      _storage.write(key: _keyContextChars, value: config.contextChars.toString()),
     ]);
   }
 
@@ -90,6 +102,7 @@ class SecureConfigStorage {
       _storage.read(key: _keyMaxTokens),
       _storage.read(key: _keyFrequencyPenalty),
       _storage.read(key: _keyPresencePenalty),
+      _storage.read(key: _keyContextChars),
     ]);
 
     final baseUrl = values[0];
@@ -106,6 +119,8 @@ class SecureConfigStorage {
       maxTokens: int.tryParse(values[4] ?? '') ?? 800,
       frequencyPenalty: double.tryParse(values[5] ?? '') ?? 0.3,
       presencePenalty: double.tryParse(values[6] ?? '') ?? 0.2,
+      // Installs that saved their config before this setting existed have no value.
+      contextChars: int.tryParse(values[7] ?? '') ?? ApiEndpointConfig.defaultContextChars,
     );
   }
 
@@ -118,6 +133,7 @@ class SecureConfigStorage {
       _storage.delete(key: _keyMaxTokens),
       _storage.delete(key: _keyFrequencyPenalty),
       _storage.delete(key: _keyPresencePenalty),
+      _storage.delete(key: _keyContextChars),
     ]);
   }
 }

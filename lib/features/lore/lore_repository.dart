@@ -13,12 +13,16 @@ class LoreRepository {
   static const _dbVersion = 1;
   static final _random = Random();
 
+  final String? _databasePath;
   Database? _db;
+
+  /// [databasePath] is only for tests; the app uses the default location.
+  LoreRepository({String? databasePath}) : _databasePath = databasePath;
 
   Future<Database> get _database async => _db ??= await _open();
 
   Future<Database> _open() async {
-    final path = p.join(await getDatabasesPath(), _dbFileName);
+    final path = _databasePath ?? p.join(await getDatabasesPath(), _dbFileName);
     return openDatabase(
       path,
       version: _dbVersion,
@@ -100,6 +104,29 @@ class LoreRepository {
     final db = await _database;
     final rows = await db.query('lore_items', orderBy: 'name COLLATE NOCASE ASC');
     return rows.map(LoreItemModel.fromMap).toList();
+  }
+
+  /// Raw rows of both tables, for the full-app backup.
+  Future<Map<String, List<Map<String, Object?>>>> exportAll() async {
+    final db = await _database;
+    return {
+      'characters': await db.query('characters'),
+      'lore_items': await db.query('lore_items'),
+    };
+  }
+
+  /// Merges [data] into the DB (same id = replaced), all or nothing.
+  Future<void> importAll(Map<String, List<Map<String, Object?>>> data) async {
+    final db = await _database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final table in const ['characters', 'lore_items']) {
+        for (final row in data[table] ?? const <Map<String, Object?>>[]) {
+          batch.insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   Future<void> close() async {

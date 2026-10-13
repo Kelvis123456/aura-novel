@@ -11,6 +11,10 @@ class ContextBuilderService {
   final LoreRepository _repository;
   static const _defaultScanWindowWords = 400;
 
+  /// Cap for the rendered block (~750 tokens). Without it a big lore base
+  /// would eat the whole prompt budget on every generation.
+  static const defaultMaxContextChars = 3000;
+
   ContextBuilderService({required LoreRepository repository}) : _repository = repository;
 
   /// Returns null when nothing relevant was detected and no entry is pinned
@@ -18,6 +22,7 @@ class ContextBuilderService {
   Future<ChatMessage?> buildContextMessage(
     String fullText, {
     int scanWindowWords = _defaultScanWindowWords,
+    int maxChars = defaultMaxContextChars,
   }) async {
     final window = _lastWords(fullText, scanWindowWords);
 
@@ -34,41 +39,52 @@ class ContextBuilderService {
     if (activeCharacters.isEmpty && activeLore.isEmpty) return null;
 
     final nameById = {for (final c in characters) c.id: c.name};
-    final block = _renderBlock(activeCharacters, activeLore, nameById);
-    return ChatMessage.system(block);
+
+    // Pinned entries first so they survive the cap; among the rest, the
+    // mentioned characters go before lore (they carry the coherence rules).
+    final entries = [
+      for (final c in activeCharacters.where((c) => c.forceInclude)) _renderCharacter(c, nameById),
+      for (final l in activeLore.where((l) => l.forceInclude)) _renderLore(l),
+      for (final c in activeCharacters.where((c) => !c.forceInclude)) _renderCharacter(c, nameById),
+      for (final l in activeLore.where((l) => !l.forceInclude)) _renderLore(l),
+    ];
+
+    const header = '[INFORMACIÓN DE CONTEXTO DEL MUNDO - REGLAS DE COHERENCIA]';
+    final buffer = StringBuffer(header);
+    for (final entry in entries) {
+      if (buffer.length + entry.length + 1 > maxChars) continue;
+      buffer
+        ..writeln()
+        ..write(entry);
+    }
+
+    // Everything was too big for the cap: nothing useful to send.
+    if (buffer.length == header.length) return null;
+    return ChatMessage.system(buffer.toString().trim());
   }
 
-  String _renderBlock(
-    List<CharacterModel> characters,
-    List<LoreItemModel> loreItems,
-    Map<String, String> nameById,
-  ) {
-    final buffer = StringBuffer()
-      ..writeln('[INFORMACIÓN DE CONTEXTO DEL MUNDO - REGLAS DE COHERENCIA]');
+  String _renderCharacter(CharacterModel c, Map<String, String> nameById) {
+    final buffer = StringBuffer();
+    final traits = c.personalityTraits.isEmpty ? 'sin rasgos definidos' : c.personalityTraits.join(', ');
+    final motivation = c.motivation.trim().isEmpty ? 'sin motivación definida' : c.motivation.trim();
+    final appearance = c.appearance.trim().isEmpty ? 'sin descripción física' : c.appearance.trim();
+    buffer.writeln('- Personaje activo: ${c.name} ($appearance, $traits, $motivation)');
 
-    for (final c in characters) {
-      final traits = c.personalityTraits.isEmpty ? 'sin rasgos definidos' : c.personalityTraits.join(', ');
-      final motivation = c.motivation.trim().isEmpty ? 'sin motivación definida' : c.motivation.trim();
-      final appearance = c.appearance.trim().isEmpty ? 'sin descripción física' : c.appearance.trim();
-      buffer.writeln('- Personaje activo: ${c.name} ($appearance, $traits, $motivation)');
-
-      if (c.secretsLimits.trim().isNotEmpty) {
-        buffer.writeln('  Límites/secretos a respetar: ${c.secretsLimits.trim()}');
-      }
-      if (c.relationships.isNotEmpty) {
-        final rel = c.relationships
-            .map((r) => '${nameById[r.characterId] ?? r.characterId}: ${r.description}')
-            .join('; ');
-        buffer.writeln('  Relaciones: $rel');
-      }
+    if (c.secretsLimits.trim().isNotEmpty) {
+      buffer.writeln('  Límites/secretos a respetar: ${c.secretsLimits.trim()}');
     }
-
-    for (final l in loreItems) {
-      final description = l.shortDescription.trim().isEmpty ? l.longDetails.trim() : l.shortDescription.trim();
-      buffer.writeln('- ${l.category.label} relevante: ${l.name} ($description)');
+    if (c.relationships.isNotEmpty) {
+      final rel = c.relationships
+          .map((r) => '${nameById[r.characterId] ?? r.characterId}: ${r.description}')
+          .join('; ');
+      buffer.writeln('  Relaciones: $rel');
     }
+    return buffer.toString().trimRight();
+  }
 
-    return buffer.toString().trim();
+  String _renderLore(LoreItemModel l) {
+    final description = l.shortDescription.trim().isEmpty ? l.longDetails.trim() : l.shortDescription.trim();
+    return '- ${l.category.label} relevante: ${l.name} ($description)';
   }
 
   String _lastWords(String text, int n) {

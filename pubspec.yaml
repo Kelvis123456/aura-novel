@@ -1,5 +1,5 @@
 name: aura_novel
-description: "Aura Novel - Next-Gen AI Storywriting Mobile App"
+description: "App móvil para escribir novelas con una IA que tú configuras."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -20,11 +20,13 @@ dependencies:
   pdf: ^3.10.8
   archive: ^3.4.10
   share_plus: ^9.0.0
+  file_picker: ^8.0.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  sqflite_common_ffi: ^2.3.5
 
 flutter:
   uses-material-design: true

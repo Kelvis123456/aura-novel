@@ -70,6 +70,7 @@ class ApiSettingsController extends ChangeNotifier {
   int maxTokens = 800;
   double frequencyPenalty = 0.3;
   double presencePenalty = 0.2;
+  int contextChars = ApiEndpointConfig.defaultContextChars;
 
   ConnectionStatus status = ConnectionStatus.unconfigured;
   String? statusDetail;
@@ -88,6 +89,7 @@ class ApiSettingsController extends ChangeNotifier {
       maxTokens = config.maxTokens;
       frequencyPenalty = config.frequencyPenalty;
       presencePenalty = config.presencePenalty;
+      contextChars = config.contextChars;
       status = ConnectionStatus.savedUntested;
     } else {
       // First run: pre-fill with Google's Gemini free tier (via its
@@ -144,6 +146,11 @@ class ApiSettingsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateContextChars(int value) {
+    contextChars = value;
+    notifyListeners();
+  }
+
   ApiSettingsFormErrors _validate() {
     final errors = <String, String>{};
 
@@ -174,6 +181,7 @@ class ApiSettingsController extends ChangeNotifier {
         maxTokens: maxTokens,
         frequencyPenalty: frequencyPenalty,
         presencePenalty: presencePenalty,
+        contextChars: contextChars,
       );
 
   /// Returns true on success. On failure, [formErrors] is populated and the
