@@ -12,15 +12,15 @@ dependencies:
 
   http: ^1.2.0
 
-  flutter_secure_storage: ^9.0.0
+  flutter_secure_storage: ^11.2.0
   sqflite: ^2.3.0
   path: ^1.9.0
   path_provider: ^2.1.2
 
   pdf: ^3.10.8
   archive: ^3.4.10
-  share_plus: ^9.0.0
-  file_picker: ^8.0.7
+  share_plus: ^13.3.1
+  file_picker: ^13.1.0
 
 dev_dependencies:
   flutter_test:
