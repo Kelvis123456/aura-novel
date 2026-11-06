@@ -15,6 +15,7 @@ import 'models/story_node_model.dart';
 import 'project_cards.dart';
 import 'project_controller.dart';
 import 'timeline_screen.dart';
+import 'wiki_export_service.dart';
 
 /// Entry point for project management: list projects → drill into a
 /// project's chapters → drill into a chapter's branching history
@@ -320,6 +321,59 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     if (mounted) await _load();
   }
 
+  Future<void> _exportWiki() async {
+    final scope = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    int? upTo;
+    final choice = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A0B12),
+          title: const Text('Exportar wiki', style: TextStyle(color: Colors.white, fontSize: 16)),
+          content: DropdownButtonFormField<int?>(
+            initialValue: upTo,
+            isExpanded: true,
+            dropdownColor: const Color(0xFF1A0B12),
+            decoration: const InputDecoration(labelText: 'Mostrar hasta'),
+            items: [
+              const DropdownMenuItem<int?>(value: null, child: Text('Todo el libro')),
+              for (var i = 0; i < _chapters.length; i++)
+                DropdownMenuItem<int?>(value: i + 1, child: Text('Capítulo ${i + 1}: ${_chapters[i].title}', overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (value) => setDialogState(() => upTo = value),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: widget.accent),
+              child: const Text('Exportar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice != true) return;
+
+    final files = WikiExportService.buildFiles(
+      project: widget.project,
+      chapters: _chapters,
+      characters: await scope.loreRepository.getAllCharacters(),
+      loreItems: await scope.loreRepository.getAllLoreItems(),
+      events: await scope.projectRepository.getTimelineEvents(widget.project.id),
+      upToChapter: upTo,
+    );
+    try {
+      await WikiExportService().exportAndShare(files, widget.project.title);
+    } on Exception catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('No se pudo exportar la wiki: $e'), behavior: SnackBarBehavior.floating));
+    }
+  }
+
   Future<void> _checkConsistency(ChapterModel chapter) async {
     final messenger = ScaffoldMessenger.of(context);
     final service = AppScope.of(context).consistencyService;
@@ -402,6 +456,11 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
         elevation: 0,
         title: Text(widget.project.title, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.public),
+            tooltip: 'Exportar wiki',
+            onPressed: _exportWiki,
+          ),
           IconButton(
             icon: const Icon(Icons.timeline),
             tooltip: 'Línea de tiempo',

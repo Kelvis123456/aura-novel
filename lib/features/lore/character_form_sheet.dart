@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'lore_repository.dart';
 import 'models/character_model.dart';
 import 'widgets/tag_input_field.dart';
+import 'widgets/visible_from_field.dart';
 
 /// Full-height create/edit form for a [CharacterModel]. Pops with the
 /// resulting model on save, or `null` if dismissed without saving.
@@ -49,6 +50,7 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
   late List<String> _personalityTraits;
   late List<CharacterRelationship> _relationships;
   late bool _forceInclude;
+  late final TextEditingController _visibleFromField;
 
   String? _nameError;
 
@@ -66,10 +68,13 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
     _personalityTraits = List.of(existing?.personalityTraits ?? const []);
     _relationships = List.of(existing?.relationships ?? const []);
     _forceInclude = existing?.forceInclude ?? false;
+    final visibleFrom = existing?.visibleFromChapter ?? 0;
+    _visibleFromField = TextEditingController(text: visibleFrom == 0 ? '' : '$visibleFrom');
   }
 
   @override
   void dispose() {
+    _visibleFromField.dispose();
     _nameField.dispose();
     _appearanceField.dispose();
     _motivationField.dispose();
@@ -103,6 +108,7 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
       secretsLimits: _secretsField.text.trim(),
       relationships: _relationships.where((r) => r.description.trim().isNotEmpty).toList(),
       forceInclude: _forceInclude,
+      visibleFromChapter: VisibleFromField.parse(_visibleFromField.text),
     );
 
     Navigator.of(context).pop(model);
@@ -176,6 +182,8 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
                   ],
                 ),
                 for (var i = 0; i < _relationships.length; i++) _relationshipRow(i, accent),
+                const SizedBox(height: 12),
+                VisibleFromField(controller: _visibleFromField),
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,

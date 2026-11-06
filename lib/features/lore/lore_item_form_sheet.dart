@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'lore_repository.dart';
 import 'models/lore_item_model.dart';
 import 'widgets/tag_input_field.dart';
+import 'widgets/visible_from_field.dart';
 
 /// Full-height create/edit form for a [LoreItemModel]. Pops with the
 /// resulting model on save, or `null` if dismissed without saving.
@@ -39,6 +40,7 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
   late LoreCategory _category;
   late List<String> _tags;
   late bool _forceInclude;
+  late final TextEditingController _visibleFromField;
 
   String? _nameError;
 
@@ -54,10 +56,13 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
     _category = existing?.category ?? LoreCategory.location;
     _tags = List.of(existing?.tags ?? const []);
     _forceInclude = existing?.forceInclude ?? false;
+    final visibleFrom = existing?.visibleFromChapter ?? 0;
+    _visibleFromField = TextEditingController(text: visibleFrom == 0 ? '' : '$visibleFrom');
   }
 
   @override
   void dispose() {
+    _visibleFromField.dispose();
     _nameField.dispose();
     _shortDescField.dispose();
     _longDetailsField.dispose();
@@ -79,6 +84,7 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
       longDetails: _longDetailsField.text.trim(),
       tags: _tags,
       forceInclude: _forceInclude,
+      visibleFromChapter: VisibleFromField.parse(_visibleFromField.text),
     );
 
     Navigator.of(context).pop(model);
@@ -148,6 +154,8 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
                   hint: 'ej. taberna, capital',
                 ),
                 const SizedBox(height: 16),
+                VisibleFromField(controller: _visibleFromField),
+                const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _forceInclude,

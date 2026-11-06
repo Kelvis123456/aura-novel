@@ -35,6 +35,9 @@ class CharacterModel {
   /// whether the character is mentioned in the recent text.
   final bool forceInclude;
 
+  /// Chapter number (1-based) from which the public wiki shows this entry; 0 = always.
+  final int visibleFromChapter;
+
   const CharacterModel({
     required this.id,
     required this.name,
@@ -45,6 +48,7 @@ class CharacterModel {
     this.secretsLimits = '',
     this.relationships = const [],
     this.forceInclude = false,
+    this.visibleFromChapter = 0,
   });
 
   CharacterModel copyWith({
@@ -56,6 +60,7 @@ class CharacterModel {
     String? secretsLimits,
     List<CharacterRelationship>? relationships,
     bool? forceInclude,
+    int? visibleFromChapter,
   }) {
     return CharacterModel(
       id: id,
@@ -67,6 +72,7 @@ class CharacterModel {
       secretsLimits: secretsLimits ?? this.secretsLimits,
       relationships: relationships ?? this.relationships,
       forceInclude: forceInclude ?? this.forceInclude,
+      visibleFromChapter: visibleFromChapter ?? this.visibleFromChapter,
     );
   }
 
@@ -80,6 +86,7 @@ class CharacterModel {
         'secrets_limits': secretsLimits,
         'relationships': jsonEncode(relationships.map((r) => r.toJson()).toList()),
         'force_include': forceInclude ? 1 : 0,
+        'visible_from_chapter': visibleFromChapter,
       };
 
   factory CharacterModel.fromMap(Map<String, dynamic> map) {
@@ -107,6 +114,7 @@ class CharacterModel {
       secretsLimits: map['secrets_limits'] as String? ?? '',
       relationships: decodeRelationships(map['relationships']),
       forceInclude: (map['force_include'] as int? ?? 0) == 1,
+      visibleFromChapter: map['visible_from_chapter'] as int? ?? 0,
     );
   }
 }
