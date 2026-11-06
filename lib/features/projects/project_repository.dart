@@ -5,13 +5,14 @@ import 'package:sqflite/sqflite.dart';
 
 import 'models/project_model.dart';
 import 'models/story_node_model.dart';
+import 'models/timeline_event_model.dart';
 
 /// SQLite-backed CRUD store for projects, chapters and their branching
 /// story nodes. A single `Database` instance is opened lazily and reused
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 3;
+  static const _dbVersion = 4;
   static final _random = Random();
 
   final String? _databasePath;
@@ -57,6 +58,7 @@ class ProjectRepository {
           )
         ''');
         await _createDraftsTable(db);
+        await _createTimelineTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // One block per version, so a DB two versions behind runs both.
@@ -65,6 +67,9 @@ class ProjectRepository {
         }
         if (oldVersion < 3) {
           await _createDraftsTable(db);
+        }
+        if (oldVersion < 4) {
+          await _createTimelineTable(db);
         }
       },
     );
@@ -76,6 +81,18 @@ class ProjectRepository {
       node_id TEXT NOT NULL,
       content TEXT NOT NULL,
       updated_at TEXT NOT NULL
+    )
+  ''');
+
+  Future<void> _createTimelineTable(Database db) => db.execute('''
+    CREATE TABLE timeline_events (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      chapter_id TEXT,
+      title TEXT NOT NULL,
+      world_date TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      position INTEGER NOT NULL DEFAULT 0
     )
   ''');
 
@@ -112,6 +129,7 @@ class ProjectRepository {
     for (final chapter in chapters) {
       batch.delete('drafts', where: 'chapter_id = ?', whereArgs: [chapter['id']]);
     }
+    batch.delete('timeline_events', where: 'project_id = ?', whereArgs: [projectId]);
     batch.delete('chapters', where: 'project_id = ?', whereArgs: [projectId]);
     batch.delete('projects', where: 'id = ?', whereArgs: [projectId]);
     await batch.commit(noResult: true);
@@ -141,6 +159,7 @@ class ProjectRepository {
     final batch = db.batch();
     batch.delete('story_nodes', where: 'chapter_id = ?', whereArgs: [chapterId]);
     batch.delete('drafts', where: 'chapter_id = ?', whereArgs: [chapterId]);
+    batch.update('timeline_events', {'chapter_id': null}, where: 'chapter_id = ?', whereArgs: [chapterId]);
     batch.delete('chapters', where: 'id = ?', whereArgs: [chapterId]);
     await batch.commit(noResult: true);
   }
@@ -178,6 +197,35 @@ class ProjectRepository {
     return rows.isEmpty ? null : StoryNodeModel.fromMap(rows.first);
   }
 
+  // ---- Timeline -----------------------------------------------------------
+
+  Future<void> saveTimelineEvent(TimelineEvent event) async {
+    final db = await _database;
+    await db.insert('timeline_events', event.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<TimelineEvent>> getTimelineEvents(String projectId) async {
+    final db = await _database;
+    final rows = await db.query('timeline_events',
+        where: 'project_id = ?', whereArgs: [projectId], orderBy: 'position ASC, title ASC');
+    return rows.map(TimelineEvent.fromMap).toList();
+  }
+
+  Future<void> deleteTimelineEvent(String id) async {
+    final db = await _database;
+    await db.delete('timeline_events', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Rewrites `position` to match the order of [ids] (drag-and-drop result).
+  Future<void> reorderTimeline(List<String> ids) async {
+    final db = await _database;
+    final batch = db.batch();
+    for (var i = 0; i < ids.length; i++) {
+      batch.update('timeline_events', {'position': i}, where: 'id = ?', whereArgs: [ids[i]]);
+    }
+    await batch.commit(noResult: true);
+  }
+
   // ---- Backup ---------------------------------------------------------------
 
   /// Raw rows of every table that holds the author's work. Drafts are left
@@ -188,6 +236,7 @@ class ProjectRepository {
       'projects': await db.query('projects'),
       'chapters': await db.query('chapters'),
       'story_nodes': await db.query('story_nodes'),
+      'timeline_events': await db.query('timeline_events'),
     };
   }
 
@@ -197,7 +246,7 @@ class ProjectRepository {
     final db = await _database;
     await db.transaction((txn) async {
       final batch = txn.batch();
-      for (final table in const ['projects', 'chapters', 'story_nodes']) {
+      for (final table in const ['projects', 'chapters', 'story_nodes', 'timeline_events']) {
         for (final row in data[table] ?? const <Map<String, Object?>>[]) {
           batch.insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
         }

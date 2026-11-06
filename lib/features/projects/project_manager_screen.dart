@@ -14,6 +14,7 @@ import 'models/project_model.dart';
 import 'models/story_node_model.dart';
 import 'project_cards.dart';
 import 'project_controller.dart';
+import 'timeline_screen.dart';
 
 /// Entry point for project management: list projects → drill into a
 /// project's chapters → drill into a chapter's branching history
@@ -401,6 +402,15 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
         elevation: 0,
         title: Text(widget.project.title, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.timeline),
+            tooltip: 'Línea de tiempo',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TimelineScreen(project: widget.project, chapters: _chapters, accent: widget.accent),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.ios_share),
             tooltip: 'Exportar proyecto',

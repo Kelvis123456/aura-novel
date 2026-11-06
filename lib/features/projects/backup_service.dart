@@ -97,10 +97,11 @@ class BackupService {
     final projects = table('projects');
     final chapters = table('chapters');
     final nodes = table('story_nodes');
+    final events = table('timeline_events');
     final characters = table('characters');
     final loreItems = table('lore_items');
 
-    await _projects.importAll({'projects': projects, 'chapters': chapters, 'story_nodes': nodes});
+    await _projects.importAll({'projects': projects, 'chapters': chapters, 'story_nodes': nodes, 'timeline_events': events});
     await _lore.importAll({'characters': characters, 'lore_items': loreItems});
 
     return BackupSummary(
