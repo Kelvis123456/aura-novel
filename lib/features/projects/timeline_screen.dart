@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/app_scope.dart';
+import 'calendar_editor_screen.dart';
+import 'models/fantasy_calendar_model.dart';
 import 'models/project_model.dart';
 import 'models/timeline_event_model.dart';
 import 'project_repository.dart';
@@ -21,6 +24,7 @@ class TimelineScreen extends StatefulWidget {
 class _TimelineScreenState extends State<TimelineScreen> {
   List<TimelineEvent> _events = [];
   bool _loading = true;
+  late ProjectModel _project = widget.project;
 
   ProjectRepository get _repo => AppScope.of(context).projectRepository;
 
@@ -46,6 +50,16 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return '';
   }
 
+  Future<void> _editCalendar() async {
+    final calendar = await Navigator.of(context).push<FantasyCalendar>(
+      MaterialPageRoute(builder: (_) => CalendarEditorScreen(initial: _project.calendar, accent: widget.accent)),
+    );
+    if (calendar == null) return;
+    final updated = _project.copyWith(calendar: calendar, updatedAt: DateTime.now());
+    await _repo.saveProject(updated);
+    if (mounted) setState(() => _project = updated);
+  }
+
   Future<void> _reorder(int oldIndex, int newIndex) async {
     final moved = List.of(_events);
     moved.insert(newIndex, moved.removeAt(oldIndex));
@@ -58,6 +72,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final date = TextEditingController(text: existing?.worldDate ?? '');
     final description = TextEditingController(text: existing?.description ?? '');
     String? chapterId = existing?.chapterId;
+    final calendar = _project.calendar;
+    final year = TextEditingController();
+    final day = TextEditingController();
+    int monthIndex = 0;
+    String? dateError;
 
     final action = await showDialog<String>(
       context: context,
@@ -71,6 +90,47 @@ class _TimelineScreenState extends State<TimelineScreen> {
               children: [
                 TextField(controller: title, autofocus: true, decoration: const InputDecoration(labelText: 'Evento')),
                 TextField(controller: date, decoration: const InputDecoration(labelText: 'Fecha del mundo (texto libre)')),
+                if (calendar != null) ...[
+                  const SizedBox(height: 8),
+                  Text('O elige con tu calendario (${calendar.eraName})', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: year,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          decoration: InputDecoration(labelText: calendar.eraName),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<int>(
+                          initialValue: monthIndex,
+                          isExpanded: true,
+                          dropdownColor: const Color(0xFF1A0B12),
+                          decoration: const InputDecoration(labelText: 'Mes'),
+                          items: [
+                            for (var i = 0; i < calendar.months.length; i++)
+                              DropdownMenuItem(value: i, child: Text(calendar.months[i].name, overflow: TextOverflow.ellipsis)),
+                          ],
+                          onChanged: (v) => setDialogState(() => monthIndex = v ?? 0),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: day,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          decoration: const InputDecoration(labelText: 'Día'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (dateError != null) Text(dateError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                ],
                 TextField(controller: description, maxLines: 3, decoration: const InputDecoration(labelText: 'Notas')),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String?>(
@@ -98,7 +158,21 @@ class _TimelineScreenState extends State<TimelineScreen> {
               child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop('save'),
+              onPressed: () {
+                if (calendar != null && year.text.trim().isNotEmpty) {
+                  try {
+                    date.text = calendar.format(
+                      year: int.parse(year.text.trim()),
+                      monthIndex: monthIndex,
+                      day: int.tryParse(day.text.trim()) ?? 0,
+                    );
+                  } on RangeError {
+                    setDialogState(() => dateError = '${calendar.months[monthIndex].name} tiene ${calendar.months[monthIndex].days} días.');
+                    return;
+                  }
+                }
+                Navigator.of(dialogContext).pop('save');
+              },
               style: FilledButton.styleFrom(backgroundColor: widget.accent),
               child: const Text('Guardar'),
             ),
@@ -133,6 +207,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text('Línea de tiempo · ${widget.project.title}', overflow: TextOverflow.ellipsis),
+        actions: [
+          IconButton(icon: const Icon(Icons.calendar_month), tooltip: 'Calendario del mundo', onPressed: _editCalendar),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

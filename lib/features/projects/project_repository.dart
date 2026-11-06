@@ -12,7 +12,7 @@ import 'models/timeline_event_model.dart';
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 4;
+  static const _dbVersion = 5;
   static final _random = Random();
 
   final String? _databasePath;
@@ -35,7 +35,8 @@ class ProjectRepository {
             title TEXT NOT NULL,
             synopsis TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            calendar TEXT NOT NULL DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -70,6 +71,9 @@ class ProjectRepository {
         }
         if (oldVersion < 4) {
           await _createTimelineTable(db);
+        }
+        if (oldVersion < 5) {
+          await db.execute("ALTER TABLE projects ADD COLUMN calendar TEXT NOT NULL DEFAULT ''");
         }
       },
     );
