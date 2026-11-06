@@ -10,6 +10,7 @@ import 'backup_service.dart';
 import 'branch_tree_viewer.dart';
 import 'editor_document_binding.dart';
 import 'export_dialog.dart';
+import 'map_screen.dart';
 import 'models/project_model.dart';
 import 'models/story_node_model.dart';
 import 'project_cards.dart';
@@ -456,6 +457,13 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
         elevation: 0,
         title: Text(widget.project.title, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.map_outlined),
+            tooltip: 'Mapa',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => MapScreen(project: widget.project, accent: widget.accent)),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.public),
             tooltip: 'Exportar wiki',
