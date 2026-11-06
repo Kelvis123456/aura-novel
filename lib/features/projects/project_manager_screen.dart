@@ -319,6 +319,52 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     if (mounted) await _load();
   }
 
+  Future<void> _checkConsistency(ChapterModel chapter) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = AppScope.of(context).consistencyService;
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Revisando coherencia…'), behavior: SnackBarBehavior.floating),
+    );
+    List<String>? issues;
+    String? error;
+    try {
+      issues = await service.check(chapter);
+    } on ApiClientException catch (e) {
+      error = e.message;
+    }
+    messenger.hideCurrentSnackBar();
+    if (!mounted) return;
+    if (error != null || issues == null) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(error ?? 'El capítulo no tiene texto todavía.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    final found = issues;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: Text('Coherencia: ${chapter.title}', style: const TextStyle(color: Colors.white, fontSize: 16)),
+        content: SingleChildScrollView(
+          child: Text(
+            found.isEmpty
+                ? 'No encontré contradicciones con tus fichas ni con los capítulos anteriores.'
+                : found.map((i) => '• $i').join('\n\n'),
+            style: const TextStyle(color: Colors.white70),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cerrar', style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _confirmDeleteChapter(ChapterModel chapter) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -411,6 +457,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
                         ),
                         onDelete: () => _confirmDeleteChapter(chapter),
                         onSummarize: () => _summarize(chapter),
+                        onCheckConsistency: () => _checkConsistency(chapter),
                       );
                     },
                   ),
