@@ -33,3 +33,18 @@ Para probar migraciones y repositorios necesito SQLite real en la máquina de de
 ## 2026-10-10: El tope de contexto lo elige el usuario
 El bloque de lore y los resúmenes de capítulos anteriores tenían un tope fijo de 3000 caracteres. Con un modelo gratuito de ventana grande sobra espacio, y con uno pequeño o local 3000 puede ser demasiado. Pasó a ser un ajuste en Ajustes de API (500 a 20000, en pasos de 500) que vale para cada uno por separado. El valor inicial sigue en 3000 y las instalaciones que ya guardaron su config lo usan hasta que lo cambien. Alternativa: detectar la ventana del modelo. No hay forma estándar de pedírsela a un endpoint compatible con OpenAI.
 
+
+## 2026-11-06: Revisión de coherencia como botón, no automática
+Cada capítulo tiene un botón que le pide a la IA comparar el texto con las fichas de lore y los resúmenes anteriores (`ConsistencyService`). Reutiliza `ContextBuilderService` y `ChapterSummaryService`. No corre sola al guardar porque cada revisión gasta tokens de la key del usuario. Costo: el resultado no se guarda, hay que volver a pedirlo. Y una IA puede inventar o pasar por alto contradicciones, así que es una ayuda y no una garantía.
+
+## 2026-11-06: Fechas del mundo como texto, con el calendario solo para formatear
+Los eventos de la línea de tiempo guardan la fecha como texto libre y el orden lo da `position` (arrastrar). El calendario inventado (era + meses con sus días) solo ayuda a escribir la fecha ("12 de Brumario, Era del Sol 312") y valida que el día exista en el mes. Alternativa: fechas numéricas con ordenamiento automático. La descarté porque obliga a definir años bisiestos, semanas, etc. para algo que el autor suele querer ordenar a mano. Se guarda como JSON en `projects.calendar`; si el JSON se corrompe se ignora y el proyecto abre igual.
+
+## 2026-11-06: Wiki pública estática con visibilidad por capítulo
+`WikiExportService` genera HTML plano (un zip) desde las fichas, sin servidor. Cada ficha tiene "visible desde el capítulo N" y al exportar se elige hasta qué capítulo mostrar, para no soltar spoilers. Los secretos y límites del personaje nunca se publican, ni con "todo el libro". Los eventos sin capítulo solo salen al publicar todo el libro, porque no tienen un punto donde volverse públicos. Alternativa: una wiki viva en un servidor. Descartada por lo mismo que el backend (ver la primera decisión).
+
+## 2026-11-06: El mapa es una imagen que el autor elige, con pines en fracciones
+No hay editor de mapas. Se elige una imagen (de Azgaar, Inkarnate o un dibujo) y se marcan pines con posición como fracción del ancho y alto, para que no se muevan al cambiar de pantalla. La imagen se copia a la carpeta de la app con nombre nuevo cada vez (Flutter cachea por ruta). La imagen no entra en la copia de seguridad JSON, solo los pines: al restaurar en otro teléfono hay que volver a elegirla.
+
+## 2026-11-06: Restaurar una copia vieja pisa calendario y mapa
+La restauración reemplaza la fila del proyecto por id. Una copia hecha antes del calendario o del mapa no trae esas columnas y las deja vacías. Es la misma regla de "reemplaza por id" de la decisión anterior; no lo resolví aparte.
