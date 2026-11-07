@@ -4,6 +4,8 @@ App móvil (Flutter, Android) para escribir novelas con ayuda de una IA. Hice la
 
 ![Escribir](docs/screenshots/01-escribir.png) ![Asistente](docs/screenshots/02-asistente.png) ![Mundo](docs/screenshots/03-mundo.png) ![Proyectos](docs/screenshots/04-proyectos.png)
 
+![Tablero](docs/screenshots/06-tablero.png) ![Relaciones](docs/screenshots/07-relaciones.png)
+
 Las capturas son del emulador de Android con un proyecto de ejemplo (el texto de la novela de muestra lo escribí yo para la demo).
 
 ## Qué hace
@@ -15,8 +17,13 @@ Las capturas son del emulador de Android con un proyecto de ejemplo (el texto de
 - **Proyectos y capítulos** guardados en SQLite local, y cada capítulo guarda su historial como un árbol de ramas (`story_nodes`): puedes bifurcar desde cualquier punto y volver a cargar una rama en el editor.
 - **Estudio de personajes y lore:** fichas de personajes y de elementos del mundo. Cada ficha pertenece a un proyecto o al universo compartido (visible en todos tus libros). `ContextBuilderService` detecta en el texto reciente los nombres y etiquetas que aparecen, más lo que fuerces incluir, y los manda como contexto a la IA para que no se contradiga. El bloque tiene un tope de caracteres que se ajusta en Ajustes de API (3000 por defecto).
 - **Resúmenes por capítulo:** un botón en la lista de capítulos le pide a la IA un resumen, y el editor lo manda como contexto al escribir los capítulos siguientes.
-- **Exportar** a TXT, PDF o EPUB y compartir el archivo.
+- **Exportar** a TXT, PDF, EPUB o DOCX (con formato de manuscrito: Times 12, doble espacio, portada, un capítulo por página) y compartir el archivo.
 - **Revisión de coherencia:** un botón por capítulo pide a la IA que lo compare con las fichas y los resúmenes anteriores y lista las contradicciones. No corre sola.
+- **Tablero** del proyecto: cada capítulo tiene una etapa (idea, borrador, revisión, listo) y unos hilos de la trama. Se filtra por hilo y una tarjeta se edita tocándola.
+- **Mapa de relaciones** entre personajes, dibujado a partir de las relaciones que ya guardan las fichas.
+- **Meta diaria y racha:** la pestaña Escribir cuenta las palabras de hoy contra una meta que tú pones y los días seguidos escribiendo. Cuenta lo que se añade en el editor, también el texto de la IA que aceptas.
+- **Vista de cambios:** cuando una herramienta reescribe un pasaje, la comparación va palabra por palabra y aceptas o rechazas cada cambio. El historial de versiones también compara una versión con la anterior.
+- **Voz del autor:** pegas unas páginas tuyas en el perfil del proyecto y el modelo imita tu ritmo y tu manera de decir las cosas.
 - **Línea de tiempo** por proyecto: eventos que se ordenan arrastrando y se enlazan al capítulo donde ocurren. Opcionalmente un calendario propio (era y meses) para escribir las fechas del mundo.
 - **Mapa:** eliges una imagen y le pones pines que pueden apuntar a una entrada de lore. La imagen no entra en la copia de seguridad.
 - **Wiki exportable:** un zip con HTML estático de personajes, lore y línea de tiempo, para subir donde quieras. Cada ficha tiene "visible desde el capítulo N" y al exportar eliges hasta qué capítulo mostrar. Los secretos del personaje nunca se publican.
