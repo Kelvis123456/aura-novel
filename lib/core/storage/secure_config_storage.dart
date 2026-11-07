@@ -126,7 +126,8 @@ class SecureConfigStorage {
       apiKey: apiKey,
       modelId: modelId,
       temperature: double.tryParse(values[3] ?? '') ?? 0.9,
-      maxTokens: int.tryParse(values[4] ?? '') ?? 4096,
+      // 800 was the old default, too short for scenes of prose: installs that saved it get the new one.
+      maxTokens: _migratedMaxTokens(int.tryParse(values[4] ?? '')),
       frequencyPenalty: double.tryParse(values[5] ?? '') ?? 0.3,
       presencePenalty: double.tryParse(values[6] ?? '') ?? 0.2,
       // Installs that saved their config before this setting existed have no value.
@@ -134,6 +135,8 @@ class SecureConfigStorage {
       researchModelId: values[8] ?? '',
     );
   }
+
+  static int _migratedMaxTokens(int? stored) => (stored == null || stored == 800) ? 4096 : stored;
 
   Future<void> clear() async {
     await Future.wait([

@@ -19,10 +19,12 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   final _visits = ValueNotifier<int>(0);
+  final _assistantVisits = ValueNotifier<int>(0);
 
   @override
   void dispose() {
     _visits.dispose();
+    _assistantVisits.dispose();
     super.dispose();
   }
 
@@ -35,7 +37,7 @@ class _AppShellState extends State<AppShell> {
         index: _index,
         children: [
           EditorScreen(visitSignal: _visits),
-          const WriterChatScreen(),
+          WriterChatScreen(visitSignal: _assistantVisits),
           const LoreStudioScreen(showAllProjects: true),
           const ProjectManagerScreen(),
         ],
@@ -63,6 +65,7 @@ class _AppShellState extends State<AppShell> {
             onDestinationSelected: (i) {
               setState(() => _index = i);
               if (i == 0) _visits.value++;
+              if (i == 1) _assistantVisits.value++;
             },
             destinations: const [
               NavigationDestination(icon: Icon(Icons.edit_outlined), selectedIcon: Icon(Icons.edit), label: 'Escribir'),

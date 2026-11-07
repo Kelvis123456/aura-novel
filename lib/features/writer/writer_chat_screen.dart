@@ -14,7 +14,10 @@ import 'writing_profile_sheet.dart';
 /// The writing assistant: a conversation that can also write long chapters,
 /// research a topic for the story, and run any craft tool on a passage.
 class WriterChatScreen extends StatefulWidget {
-  const WriterChatScreen({super.key});
+  /// Ticks when the tab is shown again, so projects and chapters made elsewhere appear.
+  final ValueNotifier<int>? visitSignal;
+
+  const WriterChatScreen({super.key, this.visitSignal});
 
   @override
   State<WriterChatScreen> createState() => _WriterChatScreenState();
@@ -42,6 +45,11 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
       storage: scope.configStorage,
     )..addListener(_onChanged);
     _controller.load();
+    widget.visitSignal?.addListener(_reload);
+  }
+
+  void _reload() {
+    if (!_controller.generating) _controller.load();
   }
 
   int _lastCount = 0;
@@ -59,6 +67,7 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
 
   @override
   void dispose() {
+    widget.visitSignal?.removeListener(_reload);
     _controller.removeListener(_onChanged);
     _controller.dispose();
     _input.dispose();

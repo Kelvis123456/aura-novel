@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// One message of the writing assistant's conversation, stored per project.
 class ChatEntry {
   final String id;
@@ -12,6 +14,10 @@ class ChatEntry {
   final String kind;
   final DateTime createdAt;
 
+  /// What it takes to repeat the request: `words` and `continue` for a chapter,
+  /// `tool`, `material` and `note` for a craft tool.
+  final Map<String, dynamic> meta;
+
   const ChatEntry({
     required this.id,
     this.projectId,
@@ -19,6 +25,7 @@ class ChatEntry {
     required this.content,
     this.kind = 'chat',
     required this.createdAt,
+    this.meta = const {},
   });
 
   ChatEntry copyWith({String? content}) => ChatEntry(
@@ -28,6 +35,7 @@ class ChatEntry {
         content: content ?? this.content,
         kind: kind,
         createdAt: createdAt,
+        meta: meta,
       );
 
   Map<String, dynamic> toMap() => {
@@ -37,6 +45,7 @@ class ChatEntry {
         'content': content,
         'kind': kind,
         'created_at': createdAt.toIso8601String(),
+        'meta': meta.isEmpty ? '' : jsonEncode(meta),
       };
 
   factory ChatEntry.fromMap(Map<String, dynamic> map) => ChatEntry(
@@ -46,5 +55,16 @@ class ChatEntry {
         content: map['content'] as String? ?? '',
         kind: map['kind'] as String? ?? 'chat',
         createdAt: DateTime.parse(map['created_at'] as String),
+        meta: _decodeMeta(map['meta'] as String?),
       );
+
+  static Map<String, dynamic> _decodeMeta(String? raw) {
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map<String, dynamic> ? decoded : const {};
+    } on FormatException {
+      return const {};
+    }
+  }
 }

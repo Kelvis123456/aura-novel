@@ -134,7 +134,8 @@ class ProjectRepository {
       role TEXT NOT NULL,
       content TEXT NOT NULL DEFAULT '',
       kind TEXT NOT NULL DEFAULT 'chat',
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      meta TEXT NOT NULL DEFAULT ''
     )
   ''');
 

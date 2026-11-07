@@ -31,4 +31,16 @@ void main() {
 
     expect((await SecureConfigStorage().load())!.contextChars, ApiEndpointConfig.defaultContextChars);
   });
+
+  test('un tope de 800 tokens guardado con el valor antiguo pasa al nuevo por defecto', () async {
+    FlutterSecureStorage.setMockInitialValues({...base, 'aura.api.max_tokens': '800'});
+
+    expect((await SecureConfigStorage().load())!.maxTokens, 4096);
+  });
+
+  test('un tope elegido por el usuario se respeta', () async {
+    FlutterSecureStorage.setMockInitialValues({...base, 'aura.api.max_tokens': '2000'});
+
+    expect((await SecureConfigStorage().load())!.maxTokens, 2000);
+  });
 }

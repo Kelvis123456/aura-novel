@@ -90,6 +90,12 @@ void main() {
       expect(ChapterWriter.parsePlan(''), isEmpty);
     });
 
+    test('parsePlan ignora la frase de introducción, las vallas y las comas sueltas', () {
+      final plan = ChapterWriter.parsePlan('Aquí tienes el plan:\n1. Primera escena\n2. Segunda escena');
+      expect(plan, ['Primera escena', 'Segunda escena']);
+      expect(ChapterWriter.parsePlan('```json\n"Una escena larga",\n"Otra escena larga"\n```'), ['Una escena larga', 'Otra escena larga']);
+    });
+
     test('sceneCount reparte las palabras y respeta el tope', () {
       expect(ChapterWriter.sceneCount(500), 1);
       expect(ChapterWriter.sceneCount(1800), 2);

@@ -83,9 +83,12 @@ class ChapterWriter {
         // fall through to the line-based reading
       }
     }
-    return text
-        .split('\n')
-        .map((l) => l.replaceFirst(RegExp(r'^\s*(?:[-*•]|\d+[.)])\s*'), '').trim())
+    final lines = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty && !l.startsWith('```') && l != '[' && l != ']').toList();
+    final marker = RegExp(r'^(?:[-*•]|\d+[.)])\s+');
+    // With a list in the answer, only the list items are scenes: an intro line is not one.
+    final items = lines.where(marker.hasMatch).toList();
+    return (items.isNotEmpty ? items : lines)
+        .map((l) => l.replaceFirst(marker, '').replaceAll(RegExp(r'^["\x27]+|["\x27,]+$'), '').trim())
         .where((l) => l.length > 3)
         .toList();
   }
@@ -108,7 +111,8 @@ class ChapterWriter {
     final beats = scenes == 1 ? [instruction.trim()] : await _plan(config, system, context, instruction, scenes, existingText);
     yield PlanReady(beats);
 
-    final perScene = (targetWords / beats.length).round();
+    // A plan with fewer scenes than asked must not stretch one call past what it can return.
+    final perScene = (targetWords / beats.length).round().clamp(100, (wordsPerScene * 1.4).round());
     var written = existingText;
     var newWords = 0;
 
@@ -203,7 +207,7 @@ class ChapterWriter {
     final beats = parsePlan(response.content);
     if (beats.isEmpty) throw const MalformedResponseException('El modelo devolvió un plan de escenas ilegible.');
     // A model that returns too many or too few still gives a usable plan.
-    return beats.length > maxScenes ? beats.sublist(0, maxScenes) : beats;
+    return beats.length > scenes ? beats.sublist(0, scenes) : beats;
   }
 
   /// Roughly 1.8 tokens per word covers Spanish; the user's own cap wins.

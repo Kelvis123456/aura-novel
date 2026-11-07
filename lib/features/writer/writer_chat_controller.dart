@@ -93,75 +93,118 @@ class WriterChatController extends ChangeNotifier {
 
   // ---- Asking ------------------------------------------------------------
 
+  /// Set while a request is being prepared or run, so a second tap can't start another.
+  /// stop() clears it: a stopped request that is still unwinding must not block the next one.
+  Object? _busyToken;
+  bool _disposed = false;
+
+  /// Identifies the request in flight. A request that finds a different value
+  /// after an await was stopped (or replaced) and must not touch the state.
+  Object? _active;
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
   /// Sends [text] in [mode]. [words] and [continueChapter] only matter for chapters.
   Future<void> send(String text, ChatMode mode, {int words = 1500, bool continueChapter = true}) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || generating) return;
-
-    final user = ChatEntry(
-      id: ProjectRepository.generateId(),
-      projectId: project?.id,
-      role: ChatRole.user,
-      content: trimmed,
-      kind: switch (mode) {
-        ChatMode.chat => 'chat',
-        ChatMode.chapter => 'chapter',
-        ChatMode.research => 'research',
-      },
-      createdAt: DateTime.now(),
-    );
-    entries = [...entries, user];
-    error = null;
-    await _repo.saveChatEntry(user);
-    await _respond(user, mode, words: words, continueChapter: continueChapter);
+    if (trimmed.isEmpty || generating || _busyToken != null) return;
+    final busy = Object();
+    _busyToken = busy;
+    try {
+      final user = ChatEntry(
+        id: ProjectRepository.generateId(),
+        projectId: project?.id,
+        role: ChatRole.user,
+        content: trimmed,
+        kind: switch (mode) {
+          ChatMode.chat => 'chat',
+          ChatMode.chapter => 'chapter',
+          ChatMode.research => 'research',
+        },
+        createdAt: DateTime.now(),
+        meta: mode == ChatMode.chapter ? {'words': words, 'continue': continueChapter} : const {},
+      );
+      entries = [...entries, user];
+      error = null;
+      _notify();
+      await _repo.saveChatEntry(user);
+      await _respond(user);
+    } finally {
+      if (_busyToken == busy) _busyToken = null;
+    }
   }
 
-  /// Drops the last assistant answer and asks again.
+  /// Drops the last assistant answer and asks again with the same settings.
   Future<void> regenerate() async {
-    if (generating || entries.isEmpty) return;
-    error = null;
-    var lastUser = entries.lastIndexWhere((e) => e.role == ChatRole.user);
+    if (generating || _busyToken != null || entries.isEmpty) return;
+    final lastUser = entries.lastIndexWhere((e) => e.role == ChatRole.user);
     if (lastUser < 0) return;
-    for (final e in entries.sublist(lastUser + 1)) {
-      await _repo.deleteChatEntry(e.id);
+    final busy = Object();
+    _busyToken = busy;
+    try {
+      error = null;
+      for (final e in entries.sublist(lastUser + 1)) {
+        await _repo.deleteChatEntry(e.id);
+      }
+      entries = entries.sublist(0, lastUser + 1);
+      _notify();
+      await _respond(entries.last);
+    } finally {
+      if (_busyToken == busy) _busyToken = null;
     }
-    entries = entries.sublist(0, lastUser + 1);
-    final user = entries.last;
-    final mode = switch (user.kind) {
-      'chapter' => ChatMode.chapter,
-      'research' => ChatMode.research,
-      _ => ChatMode.chat,
-    };
-    await _respond(user, mode, words: 1500, continueChapter: true);
   }
 
   /// Runs one craft module on [material] and shows the answer in the chat.
   Future<void> runTool(String moduleId, String material, {String note = ''}) async {
-    if (generating || material.trim().isEmpty) return;
-    final user = ChatEntry(
-      id: ProjectRepository.generateId(),
-      projectId: project?.id,
-      role: ChatRole.user,
-      content: note.trim().isEmpty ? material.trim() : '${note.trim()}\n\n${material.trim()}',
-      kind: 'tool',
-      createdAt: DateTime.now(),
-    );
-    entries = [...entries, user];
-    await _repo.saveChatEntry(user);
-
-    final answer = _newAnswer('tool');
-    await _stream(answer, _service.runTool(moduleId: moduleId, material: material, profile: profile, note: note, context: await _context(material)).map((t) => t));
+    if (generating || _busyToken != null || material.trim().isEmpty) return;
+    final busy = Object();
+    _busyToken = busy;
+    try {
+      final user = ChatEntry(
+        id: ProjectRepository.generateId(),
+        projectId: project?.id,
+        role: ChatRole.user,
+        content: note.trim().isEmpty ? material.trim() : '${note.trim()}\n\n${material.trim()}',
+        kind: 'tool',
+        createdAt: DateTime.now(),
+        meta: {'tool': moduleId, 'material': material.trim(), 'note': note.trim()},
+      );
+      entries = [...entries, user];
+      error = null;
+      _notify();
+      await _repo.saveChatEntry(user);
+      await _respond(user);
+    } finally {
+      if (_busyToken == busy) _busyToken = null;
+    }
   }
 
-  Future<void> _respond(ChatEntry user, ChatMode mode, {required int words, required bool continueChapter}) async {
-    switch (mode) {
-      case ChatMode.chat:
-        final answer = _newAnswer('chat');
-        await _stream(answer, _service.reply(history: entries.sublist(0, entries.length - 1) + [user], profile: profile, context: await _context(user.content)));
-      case ChatMode.chapter:
-        await _writeChapter(user, words, continueChapter);
-      case ChatMode.research:
+  /// Answers [user] the way its kind and saved settings say.
+  Future<void> _respond(ChatEntry user) async {
+    switch (user.kind) {
+      case 'chapter':
+        await _writeChapter(user, (user.meta['words'] as int?) ?? 1500, user.meta['continue'] != false);
+      case 'research':
         await _research(user);
+      case 'tool':
+        final material = (user.meta['material'] as String?) ?? user.content;
+        final answer = _newAnswer('tool');
+        await _stream(
+          answer,
+          _service.runTool(
+            moduleId: (user.meta['tool'] as String?) ?? 'revision',
+            material: material,
+            profile: profile,
+            note: (user.meta['note'] as String?) ?? '',
+            context: await _context(material),
+          ),
+        );
+      default:
+        final answer = _newAnswer('chat');
+        // `entries` ends with the new (empty) answer: the history is everything before it.
+        await _stream(answer, _service.reply(history: entries.sublist(0, entries.length - 1), profile: profile, context: await _context(user.content)));
     }
   }
 
@@ -179,31 +222,40 @@ class WriterChatController extends ChangeNotifier {
     await _stream(answer, events.map((e) => e), onEvent: (e) {
       if (e is SegmentStarted) {
         progress = 'Escena ${e.index + 1} de ${e.total}';
-        notifyListeners();
+        _notify();
       }
     });
   }
 
   Future<void> _research(ChatEntry user) async {
     final answer = _newAnswer('research');
+    final token = Object();
+    _active = token;
     generating = true;
     progress = 'Investigando…';
-    notifyListeners();
+    _notify();
     try {
       final text = await _service.research(
         topic: user.content,
         profile: profile,
         storyContext: project == null ? '' : '${project!.title}. ${project!.synopsis}'.trim(),
       );
+      if (_active != token) return; // stopped while waiting
       _setContent(answer, text);
-      await _repo.saveChatEntry(entries.last);
+      final saved = entries.where((e) => e.id == answer.id).firstOrNull;
+      if (saved != null) await _repo.saveChatEntry(saved);
     } on ApiClientException catch (e) {
-      error = e.message;
-      _dropEmptyAnswer(answer);
+      if (_active == token) {
+        error = e.message;
+        _dropEmptyAnswer(answer);
+      }
     } finally {
-      generating = false;
-      progress = null;
-      notifyListeners();
+      if (_active == token) {
+        _active = null;
+        generating = false;
+        progress = null;
+        _notify();
+      }
     }
   }
 
@@ -262,6 +314,8 @@ class WriterChatController extends ChangeNotifier {
   }
 
   void stop() {
+    _active = null;
+    _busyToken = null;
     _subscription?.cancel();
     _subscription = null;
     if (generating) {
@@ -275,10 +329,10 @@ class WriterChatController extends ChangeNotifier {
           unawaited(_repo.saveChatEntry(last));
         }
       }
-      notifyListeners();
     }
     _running?.complete();
     _running = null;
+    _notify();
   }
 
   // ---- Internals ---------------------------------------------------------
@@ -316,10 +370,12 @@ class WriterChatController extends ChangeNotifier {
 
   /// Consumes a stream of text chunks or [WriterEvent]s into [answer].
   Future<void> _stream(ChatEntry answer, Stream<Object?> source, {void Function(WriterEvent)? onEvent}) async {
+    final token = Object();
+    _active = token;
     generating = true;
     error = null;
     progress = null;
-    notifyListeners();
+    _notify();
 
     final done = Completer<void>();
     _running = done;
@@ -339,7 +395,7 @@ class WriterChatController extends ChangeNotifier {
         final now = DateTime.now();
         if (now.difference(lastNotify).inMilliseconds > 60) {
           lastNotify = now;
-          notifyListeners();
+          _notify();
         }
       },
       onError: (Object e) {
@@ -353,10 +409,14 @@ class WriterChatController extends ChangeNotifier {
     );
 
     await done.future;
-    _subscription = null;
-    _running = null;
-    generating = false;
-    progress = null;
+    final stillMine = _active == token;
+    if (stillMine) {
+      _subscription = null;
+      _running = null;
+      _active = null;
+      generating = false;
+      progress = null;
+    }
     final current = entries.where((e) => e.id == answer.id).firstOrNull;
     if (current != null) {
       if (current.content.trim().isEmpty) {
@@ -365,12 +425,15 @@ class WriterChatController extends ChangeNotifier {
         await _repo.saveChatEntry(current);
       }
     }
-    notifyListeners();
+    _notify();
   }
 
   @override
   void dispose() {
+    _disposed = true;
+    _active = null;
     _subscription?.cancel();
+    if (_running?.isCompleted == false) _running?.complete();
     super.dispose();
   }
 }
