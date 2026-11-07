@@ -19,7 +19,11 @@ class _MonthRow {
   final TextEditingController name;
   final TextEditingController days;
 
-  _MonthRow(String name, int days)
+  /// True for a row added blank by the screen, so saving can skip it without
+  /// dropping an existing month whose name the user just cleared.
+  final bool untouchedBlank;
+
+  _MonthRow(String name, int days, {this.untouchedBlank = false})
       : name = TextEditingController(text: name),
         days = TextEditingController(text: '$days');
 }
@@ -35,7 +39,7 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
     final initial = widget.initial;
     _era = TextEditingController(text: initial?.eraName ?? 'Año');
     _rows = [for (final m in initial?.months ?? const <CalendarMonth>[]) _MonthRow(m.name, m.days)];
-    if (_rows.isEmpty) _rows.add(_MonthRow('', 30));
+    if (_rows.isEmpty) _rows.add(_MonthRow('', 30, untouchedBlank: true));
   }
 
   @override
@@ -53,7 +57,7 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
     for (final r in _rows) {
       final name = r.name.text.trim();
       final days = int.tryParse(r.days.text.trim()) ?? 0;
-      if (name.isEmpty && r.days.text.trim() == '30') continue; // untouched blank row
+      if (r.untouchedBlank && name.isEmpty && r.days.text.trim() == '30') continue;
       if (name.isEmpty || days < 1) {
         setState(() => _error = 'Cada mes necesita un nombre y al menos 1 día.');
         return;
@@ -115,7 +119,7 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
               ],
             ),
           TextButton.icon(
-            onPressed: () => setState(() => _rows.add(_MonthRow('', 30))),
+            onPressed: () => setState(() => _rows.add(_MonthRow('', 30, untouchedBlank: true))),
             icon: Icon(Icons.add, color: widget.accent),
             label: Text('Añadir mes', style: TextStyle(color: widget.accent)),
           ),
