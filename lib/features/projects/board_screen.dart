@@ -182,7 +182,8 @@ class _BoardScreenState extends State<BoardScreen> {
 
   Widget _column(AuraColors c, String status, List<ChapterModel> items) {
     return Container(
-      width: 250,
+      // two columns fit on a phone; the rest scroll
+      width: (MediaQuery.of(context).size.width * 0.44).clamp(180.0, 300.0),
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14)),
