@@ -10,6 +10,8 @@ import '../projects/editor_document_binding.dart';
 import '../projects/models/story_node_model.dart';
 import '../projects/project_repository.dart';
 import '../settings/api_settings_screen.dart';
+import '../projects/writing_stats.dart';
+import '../projects/daily_goal_card.dart';
 import 'draft_autosaver.dart';
 import 'editor_controller.dart';
 import 'prompt_bar_widgets.dart';
@@ -52,6 +54,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
   late ProjectRepository _projectRepository;
   EditorDocumentBinding? _binding;
   DraftAutosaver? _autosaver;
+  int _loggedWords = 0;
   final _undoController = UndoHistoryController();
   final _canvasScrollController = ScrollController();
   final _promptFieldController = TextEditingController();
@@ -105,6 +108,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
     if (draft == null || !mounted) return;
     _controller.textController.text = draft;
     _controller.startSession();
+    _loggedWords = 0;
     _showSnack('Recuperé lo que habías escrito sin guardar.');
   }
 
@@ -112,7 +116,16 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       _autosaver?.flush();
+      _logProgress();
     }
+  }
+
+  /// Adds what was written since the last call to today's count (the daily goal and streak).
+  void _logProgress() {
+    final delta = _controller.wordsWrittenThisSession - _loggedWords;
+    if (delta <= 0) return;
+    _loggedWords += delta;
+    _projectRepository.addWords(WritingStats.dayKey(DateTime.now()), delta);
   }
 
   void _onControllerChanged() {
@@ -129,6 +142,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _logProgress();
     _autosaver?.flush();
     _autosaver?.dispose();
     _undoController.dispose();
@@ -166,6 +180,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       timestamp: DateTime.now(),
     );
     await _projectRepository.saveNode(node);
+    _logProgress();
     await _autosaver?.markSaved(nodeId: node.id, content: node.content);
     if (!mounted) return;
     setState(() => _binding = binding.withNode(node.id));
@@ -275,6 +290,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
               ...[
                 WelcomeCard(refresh: widget.visitSignal!),
                 ContinueCard(refresh: widget.visitSignal!),
+                DailyGoalCard(refresh: widget.visitSignal!),
               ],
             Expanded(child: _buildCanvas(accent)),
             if (!distractionFree && _controller.pendingSuggestion != null && !_controller.isGenerating)

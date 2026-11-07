@@ -348,6 +348,22 @@ class WriterChatController extends ChangeNotifier {
 
   /// Adds [entry]'s text to the selected chapter as a new saved version, or
   /// creates a chapter named [newChapterTitle] when none is selected.
+  /// The passage a tool answer rewrote, so the author can compare the two.
+  String? originalOf(ChatEntry answer) {
+    final i = entries.indexWhere((e) => e.id == answer.id);
+    if (i <= 0 || answer.kind != 'tool') return null;
+    final material = entries[i - 1].meta['material'];
+    return material is String && material.trim().isNotEmpty ? material : null;
+  }
+
+  /// Keeps the author's reviewed version in place of the model's answer.
+  Future<void> replaceContent(ChatEntry entry, String text) async {
+    final updated = entry.copyWith(content: text);
+    await _repo.saveChatEntry(updated);
+    entries = [for (final e in entries) e.id == entry.id ? updated : e];
+    _notify();
+  }
+
   Future<ChapterModel> insert(ChatEntry entry, {String? newChapterTitle}) async {
     final p = project;
     if (p == null) throw StateError('Choose a project first.');

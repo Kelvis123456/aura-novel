@@ -14,12 +14,16 @@ class BranchTreeViewer extends StatelessWidget {
   final ValueChanged<StoryNodeModel> onSelectNode;
   final ValueChanged<StoryNodeModel> onBranchFromNode;
 
+  /// Compare a version with the one it came from. Null hides the button.
+  final ValueChanged<StoryNodeModel>? onCompare;
+
   const BranchTreeViewer({
     super.key,
     required this.nodes,
     required this.accent,
     required this.onSelectNode,
     required this.onBranchFromNode,
+    this.onCompare,
     this.selectedNodeId,
   });
 
@@ -70,6 +74,7 @@ class BranchTreeViewer extends StatelessWidget {
         selected: node.id == selectedNodeId,
         onTap: () => onSelectNode(node),
         onBranch: () => onBranchFromNode(node),
+        onCompare: node.parentNodeId == null || onCompare == null ? null : () => onCompare!(node),
       ),
       for (final child in children) ..._buildBranch(child, byParent, depth + 1),
     ];
@@ -83,6 +88,7 @@ class _NodeTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback onBranch;
+  final VoidCallback? onCompare;
 
   const _NodeTile({
     required this.node,
@@ -91,6 +97,7 @@ class _NodeTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     required this.onBranch,
+    this.onCompare,
   });
 
   @override
@@ -140,6 +147,12 @@ class _NodeTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (onCompare != null)
+                  IconButton(
+                    icon: Icon(Icons.difference_outlined, size: 16, color: context.aura.textFaint),
+                    tooltip: 'Ver qué cambió respecto a la versión anterior',
+                    onPressed: onCompare,
+                  ),
                 IconButton(
                   icon: Icon(Icons.call_split, size: 16, color: context.aura.textFaint),
                   tooltip: 'Crear rama desde aquí',

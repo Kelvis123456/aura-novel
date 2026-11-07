@@ -45,6 +45,9 @@ class LoreStudioController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Every sheet in scope, ignoring the search box (the relationship map needs the whole cast).
+  List<CharacterModel> get scopedCharacters => characters.where((c) => _inScope(c.projectId)).toList();
+
   List<CharacterModel> get filteredCharacters {
     final q = searchQuery.trim().toLowerCase();
     final scoped = characters.where((c) => _inScope(c.projectId)).toList();

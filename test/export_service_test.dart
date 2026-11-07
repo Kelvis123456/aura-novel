@@ -56,6 +56,16 @@ void main() {
     expect('<p>'.allMatches(xhtml).length, 2);
   });
 
+  test('docx lleva portada, un encabezado por capítulo y escapa el texto', () {
+    final archive = ZipDecoder().decodeBytes(ExportService.buildDocxBytes(project, chapters, content, 'Kelvis'));
+    expect(archive.files.map((f) => f.name), containsAll(['[Content_Types].xml', '_rels/.rels', 'word/document.xml', 'word/styles.xml']));
+    final doc = text(archive, 'word/document.xml');
+    expect(RegExp('w:pStyle w:val="Heading1"').allMatches(doc), hasLength(2));
+    expect(doc, contains('Uno &lt;1&gt;'));
+    expect(doc, contains('Segundo &amp; último.'));
+    expect(RegExp('<w:p>').allMatches(doc).length, 7);
+  });
+
   test('un capítulo sin contenido no rompe el export', () {
     final archive = ZipDecoder().decodeBytes(ExportService.buildEpubBytes(project, chapters, const {}, 'Kelvis'));
     expect(archive.findFile('OEBPS/chapter_2.xhtml'), isNotNull);
