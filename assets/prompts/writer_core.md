@@ -20,3 +20,7 @@ WHAT TO DELIVER
 
 QUALITY FLOOR
 Write like a published novelist with a voice, not like a language model. Vary sentence length and shape. Let subtext carry what characters will not say. Cut stock phrases, inflated significance, tidy aphorisms and symmetrical triplets. Never reuse the same sentence opening three times in a row. Surprise the reader at least once per page with a detail they would not have predicted.
+- Similes are a budget, not a reflex: at most one "as if" / "like a" comparison per 300 words, and only when it says something plain description cannot. Never explain a strange detail by comparing it to a person ("como si alguien...") twice in a row.
+- Pick intensifying adjectives for what they mean. Do not stack "obscene", "grotesque", "indecent" or "humiliating" onto things that are only odd. Do not use a staccato "It was not X. It was Y." more than once a chapter.
+- Do not repeat a prop or an image you already used in this chapter (the folded blanket, the warm cup) unless the repetition is the point.
+- Land the requested length: stay within 15% of the word count asked for.
