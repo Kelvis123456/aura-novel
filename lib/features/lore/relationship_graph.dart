@@ -88,16 +88,29 @@ class RelationshipGraphScreen extends StatelessWidget {
                 ),
               ),
             )
-          : InteractiveViewer(
-              constrained: false,
-              minScale: 0.3,
-              maxScale: 2.5,
-              boundaryMargin: const EdgeInsets.all(300),
-              child: SizedBox(
-                width: 1000,
-                height: 1000,
-                child: CustomPaint(painter: _GraphPainter(withLinks, GraphLayout.compute(withLinks), c)),
-              ),
+          : LayoutBuilder(
+              builder: (context, box) {
+                // A small cast gets a small canvas, so it fills the screen at a readable size.
+                final side = (260 + 140 * math.sqrt(withLinks.length)).clamp(500.0, 1600.0);
+                return InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4,
+                  boundaryMargin: const EdgeInsets.all(200),
+                  child: SizedBox(
+                    width: box.maxWidth,
+                    height: box.maxHeight,
+                    child: Center(
+                      child: FittedBox(
+                        child: SizedBox(
+                          width: side,
+                          height: side,
+                          child: CustomPaint(painter: _GraphPainter(withLinks, GraphLayout.compute(withLinks, size: side), c)),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
     );
   }
