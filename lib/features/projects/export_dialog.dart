@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'export_service.dart';
 import 'models/project_model.dart';
 import 'project_repository.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// Bottom sheet to pick an export format and which chapters to include,
 /// then compile + hand the file to the native share sheet. Each chapter's
@@ -17,7 +18,7 @@ Future<void> showExportDialog(
 }) {
   return showModalBottomSheet(
     context: context,
-    backgroundColor: const Color(0xFF0D0508),
+    backgroundColor: context.aura.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     builder: (_) => _ExportSheet(project: project, chapters: chapters, repository: repository, accent: accent),
   );
@@ -76,7 +77,7 @@ class _ExportSheetState extends State<_ExportSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo exportar: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text('No se pudo exportar: $e'), backgroundColor: context.aura.danger),
         );
       }
     } finally {
@@ -97,10 +98,10 @@ class _ExportSheetState extends State<_ExportSheet> {
           children: [
             Text(
               'Exportar "${widget.project.title}"',
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(color: context.aura.text, fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
-            const Text('FORMATO', style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.1)),
+            Text('FORMATO', style: TextStyle(color: context.aura.textDim, fontSize: 11, letterSpacing: 1.1)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -111,14 +112,14 @@ class _ExportSheetState extends State<_ExportSheet> {
                     selected: _format == format,
                     onSelected: (_) => setState(() => _format = format),
                     selectedColor: accent.withValues(alpha: 0.3),
-                    backgroundColor: Colors.white.withValues(alpha: 0.05),
-                    labelStyle: TextStyle(color: _format == format ? Colors.white : Colors.white60, fontSize: 12),
-                    side: BorderSide(color: _format == format ? accent : Colors.white24),
+                    backgroundColor: context.aura.surface,
+                    labelStyle: TextStyle(color: _format == format ? context.aura.text : context.aura.textDim, fontSize: 12),
+                    side: BorderSide(color: _format == format ? accent : context.aura.textFaint),
                   ),
               ],
             ),
             const SizedBox(height: 16),
-            const Text('CAPÍTULOS A INCLUIR', style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.1)),
+            Text('CAPÍTULOS A INCLUIR', style: TextStyle(color: context.aura.textDim, fontSize: 11, letterSpacing: 1.1)),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 260),
               child: ListView(
@@ -137,7 +138,7 @@ class _ExportSheetState extends State<_ExportSheet> {
                       activeColor: accent,
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
-                      title: Text(chapter.title, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                      title: Text(chapter.title, style: TextStyle(color: context.aura.text, fontSize: 13)),
                     ),
                 ],
               ),
@@ -146,7 +147,7 @@ class _ExportSheetState extends State<_ExportSheet> {
             FilledButton.icon(
               onPressed: _isExporting || _includedChapterIds.isEmpty ? null : _export,
               icon: _isExporting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.aura.text))
                   : const Icon(Icons.ios_share),
               label: Text(_isExporting ? 'Exportando…' : 'Exportar y compartir'),
               style: FilledButton.styleFrom(backgroundColor: accent, padding: const EdgeInsets.symmetric(vertical: 14)),

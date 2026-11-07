@@ -10,6 +10,7 @@ import '../lore/models/lore_item_model.dart';
 import 'models/map_pin_model.dart';
 import 'models/project_model.dart';
 import 'project_repository.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// The project's map image with pins on it. Long-press to drop a pin, tap a
 /// pin to see its note or remove it. The image is a file the author picks
@@ -93,8 +94,8 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A0B12),
-          title: const Text('Nuevo pin', style: TextStyle(color: Colors.white, fontSize: 16)),
+          backgroundColor: context.aura.surface,
+          title: Text('Nuevo pin', style: TextStyle(color: context.aura.text, fontSize: 16)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -103,7 +104,7 @@ class _MapScreenState extends State<MapScreen> {
                 DropdownButtonFormField<String?>(
                   initialValue: loreId,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF1A0B12),
+                  dropdownColor: context.aura.surface,
                   decoration: const InputDecoration(labelText: 'Entrada de lore (opcional)'),
                   items: [
                     const DropdownMenuItem<String?>(value: null, child: Text('Ninguna')),
@@ -121,7 +122,7 @@ class _MapScreenState extends State<MapScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+              child: Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -151,22 +152,22 @@ class _MapScreenState extends State<MapScreen> {
     final remove = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
-        title: Text(pin.label, style: const TextStyle(color: Colors.white, fontSize: 16)),
+        backgroundColor: context.aura.surface,
+        title: Text(pin.label, style: TextStyle(color: context.aura.text, fontSize: 16)),
         content: Text(
           lore == null
               ? 'Sin entrada de lore enlazada.'
               : '${lore.category.label}: ${lore.shortDescription.isEmpty ? lore.longDetails : lore.shortDescription}',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.aura.textDim),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Quitar pin', style: TextStyle(color: Colors.redAccent)),
+            child: Text('Quitar pin', style: TextStyle(color: context.aura.danger)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cerrar', style: TextStyle(color: Colors.white54)),
+            child: Text('Cerrar', style: TextStyle(color: context.aura.textDim)),
           ),
         ],
       ),
@@ -181,7 +182,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final file = _imageFile;
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -202,7 +203,7 @@ class _MapScreenState extends State<MapScreen> {
                           ? 'Elige una imagen de tu mapa (de Azgaar, Inkarnate o un dibujo) y márcala con pines.'
                           : 'No encuentro la imagen del mapa en este dispositivo. Elígela de nuevo; los pines se conservan.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white54),
+                      style: TextStyle(color: context.aura.textDim),
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
@@ -235,11 +236,18 @@ class _MapScreenState extends State<MapScreen> {
                                   Positioned(
                                     left: pin.x * area.maxWidth - 14,
                                     top: pin.y * area.maxHeight - 28,
+                                    key: ValueKey(pin.id),
                                     child: GestureDetector(
                                       onTap: () => _showPin(pin),
-                                      child: Tooltip(
-                                        message: pin.label,
-                                        child: Icon(Icons.location_on, size: 28, color: widget.accent),
+                                      child: TweenAnimationBuilder<double>(
+                                        tween: Tween(begin: 0, end: 1),
+                                        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 520),
+                                        curve: Curves.elasticOut,
+                                        builder: (context, t, child) => Transform.scale(scale: t, alignment: Alignment.bottomCenter, child: child),
+                                        child: Tooltip(
+                                          message: pin.label,
+                                          child: Icon(Icons.location_on, size: 28, color: widget.accent),
+                                        ),
                                       ),
                                     ),
                                   ),

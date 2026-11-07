@@ -6,6 +6,7 @@ import '../projects/models/project_model.dart';
 import 'widgets/project_owner_field.dart';
 import 'widgets/tag_input_field.dart';
 import 'widgets/visible_from_field.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// Full-height create/edit form for a [LoreItemModel]. Pops with the
 /// resulting model on save, or `null` if dismissed without saving.
@@ -27,7 +28,7 @@ class LoreItemFormSheet extends StatefulWidget {
     return showModalBottomSheet<LoreItemModel>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D0508),
+      backgroundColor: context.aura.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -122,15 +123,15 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
                     width: 40,
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4)),
+                    decoration: BoxDecoration(color: context.aura.textFaint, borderRadius: BorderRadius.circular(4)),
                   ),
                 ),
                 Text(
                   _isEditing ? 'Editar elemento de lore' : 'Nuevo elemento de lore',
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.aura.text, fontSize: 18, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 20),
-                const Text('CATEGORÍA', style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.1)),
+                Text('CATEGORÍA', style: TextStyle(color: context.aura.textDim, fontSize: 11, letterSpacing: 1.1)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -142,9 +143,9 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
                         selected: _category == category,
                         onSelected: (_) => setState(() => _category = category),
                         selectedColor: accent.withValues(alpha: 0.3),
-                        backgroundColor: Colors.white.withValues(alpha: 0.05),
-                        labelStyle: TextStyle(color: _category == category ? Colors.white : Colors.white60, fontSize: 12),
-                        side: BorderSide(color: _category == category ? accent : Colors.white24),
+                        backgroundColor: context.aura.surface,
+                        labelStyle: TextStyle(color: _category == category ? context.aura.text : context.aura.textDim, fontSize: 12),
+                        side: BorderSide(color: _category == category ? accent : context.aura.textFaint),
                       ),
                   ],
                 ),
@@ -172,10 +173,10 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
                   value: _forceInclude,
                   onChanged: (v) => setState(() => _forceInclude = v),
                   activeThumbColor: accent,
-                  title: const Text('Forzar inclusión en la IA', style: TextStyle(color: Colors.white, fontSize: 14)),
-                  subtitle: const Text(
+                  title: Text('Forzar inclusión en la IA', style: TextStyle(color: context.aura.text, fontSize: 14)),
+                  subtitle: Text(
                     'Se incluirá en el contexto aunque no se mencione en el texto actual.',
-                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                    style: TextStyle(color: context.aura.textFaint, fontSize: 12),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -202,13 +203,13 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
+      style: TextStyle(color: context.aura.text, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         errorText: errorText,
-        labelStyle: const TextStyle(color: Colors.white54),
+        labelStyle: TextStyle(color: context.aura.textDim),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.04),
+        fillColor: context.aura.surface,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

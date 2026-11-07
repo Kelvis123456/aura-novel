@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'models/fantasy_calendar_model.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// Edits the era name and the months of a project's made-up calendar.
 /// Pops with the new [FantasyCalendar], or null when nothing was saved.
@@ -75,7 +76,7 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -87,7 +88,7 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
         children: [
           TextField(controller: _era, decoration: const InputDecoration(labelText: 'Nombre de la era (ej. Año, Era del Sol)')),
           const SizedBox(height: 16),
-          const Text('Meses, en orden', style: TextStyle(color: Colors.white70)),
+          Text('Meses, en orden', style: TextStyle(color: context.aura.textDim)),
           for (var i = 0; i < _rows.length; i++)
             Row(
               key: ObjectKey(_rows[i]),
@@ -106,7 +107,7 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.white38),
+                  icon: Icon(Icons.remove_circle_outline, color: context.aura.textFaint),
                   tooltip: 'Quitar mes',
                   onPressed: _rows.length == 1
                       ? null
@@ -123,7 +124,7 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
             icon: Icon(Icons.add, color: widget.accent),
             label: Text('Añadir mes', style: TextStyle(color: widget.accent)),
           ),
-          if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: Colors.redAccent))),
+          if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: TextStyle(color: context.aura.danger))),
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/aura_theme.dart';
 
 /// Chip-based multi-value input used for aliases, personality traits and
 /// lore tags. Commit a value with Enter/submit; tap the chip's `x` to remove.
@@ -58,7 +59,7 @@ class _TagInputFieldState extends State<TagInputField> {
       children: [
         Text(
           widget.label.toUpperCase(),
-          style: const TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.1),
+          style: TextStyle(color: context.aura.textDim, fontSize: 11, letterSpacing: 1.1),
         ),
         const SizedBox(height: 6),
         Wrap(
@@ -68,9 +69,9 @@ class _TagInputFieldState extends State<TagInputField> {
           children: [
             for (final tag in _tags)
               Chip(
-                label: Text(tag, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                label: Text(tag, style: TextStyle(color: context.aura.text, fontSize: 12)),
                 backgroundColor: widget.accent.withValues(alpha: 0.18),
-                deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white70),
+                deleteIcon: Icon(Icons.close, size: 14, color: context.aura.textDim),
                 onDeleted: () => _remove(tag),
                 side: BorderSide(color: widget.accent.withValues(alpha: 0.4)),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -79,11 +80,11 @@ class _TagInputFieldState extends State<TagInputField> {
               width: 140,
               child: TextField(
                 controller: _fieldController,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                style: TextStyle(color: context.aura.text, fontSize: 13),
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: widget.hint,
-                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                  hintStyle: TextStyle(color: context.aura.textFaint, fontSize: 13),
                   border: InputBorder.none,
                 ),
                 onSubmitted: _commit,
