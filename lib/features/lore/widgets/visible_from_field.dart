@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/theme/aura_theme.dart';
 
 /// "Visible desde el capítulo N" for the public wiki. Empty or 0 = always.
 class VisibleFromField extends StatelessWidget {
@@ -15,7 +16,7 @@ class VisibleFromField extends StatelessWidget {
       controller: controller,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: context.aura.text),
       decoration: const InputDecoration(
         labelText: 'Visible en la wiki desde el capítulo',
         helperText: 'Vacío = siempre. Evita spoilers a quien lea hasta cierto punto.',

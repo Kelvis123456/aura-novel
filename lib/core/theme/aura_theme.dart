@@ -32,6 +32,10 @@ class AuraColors extends ThemeExtension<AuraColors> {
   final Color onAccent;
   final Color danger;
 
+  /// Status colors, separate from the brand accent.
+  final Color success;
+  final Color warning;
+
   const AuraColors({
     required this.bg,
     required this.surface,
@@ -44,6 +48,8 @@ class AuraColors extends ThemeExtension<AuraColors> {
     required this.accentText,
     required this.onAccent,
     required this.danger,
+    required this.success,
+    required this.warning,
   });
 
   static const tinta = AuraColors(
@@ -58,6 +64,8 @@ class AuraColors extends ThemeExtension<AuraColors> {
     accentText: Color(0xFFEF7F74),
     onAccent: Color(0xFF110C09),
     danger: Color(0xFFEF7F74),
+    success: Color(0xFF7FBF8E),
+    warning: Color(0xFFE0B15A),
   );
 
   static const papel = AuraColors(
@@ -72,6 +80,8 @@ class AuraColors extends ThemeExtension<AuraColors> {
     accentText: Color(0xFFA83630),
     onAccent: Color(0xFFF6F3EC),
     danger: Color(0xFFA83630),
+    success: Color(0xFF2F7D4B),
+    warning: Color(0xFF8A5A00),
   );
 
   @override
@@ -87,6 +97,8 @@ class AuraColors extends ThemeExtension<AuraColors> {
     Color? accentText,
     Color? onAccent,
     Color? danger,
+    Color? success,
+    Color? warning,
   }) =>
       AuraColors(
         bg: bg ?? this.bg,
@@ -100,6 +112,8 @@ class AuraColors extends ThemeExtension<AuraColors> {
         accentText: accentText ?? this.accentText,
         onAccent: onAccent ?? this.onAccent,
         danger: danger ?? this.danger,
+        success: success ?? this.success,
+        warning: warning ?? this.warning,
       );
 
   @override
@@ -117,6 +131,8 @@ class AuraColors extends ThemeExtension<AuraColors> {
       accentText: Color.lerp(accentText, other.accentText, t)!,
       onAccent: Color.lerp(onAccent, other.onAccent, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
+      success: Color.lerp(success, other.success, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
     );
   }
 }
@@ -175,8 +191,9 @@ class AuraTheme {
         labelStyle: TextStyle(color: c.textDim),
         helperStyle: TextStyle(color: c.textFaint),
         hintStyle: TextStyle(color: c.textFaint),
-        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.line)),
-        focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.accentText, width: 2)),
+        // Only `border`: a field that sets `border: InputBorder.none` (the prompt bar) would otherwise
+        // still get these through enabledBorder/focusedBorder.
+        border: UnderlineInputBorder(borderSide: BorderSide(color: c.line)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent, shape: const StadiumBorder()),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'models/story_node_model.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// Renders a chapter's branching history as an indented tree: each node's
 /// children (nodes whose `parentNodeId` points at it) are drawn nested one
@@ -36,13 +37,13 @@ class BranchTreeViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (nodes.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
             'Este capítulo aún no tiene versiones guardadas.\nÁbrelo en el editor y pulsa "Guardar versión".',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 13),
+            style: TextStyle(color: context.aura.textFaint, fontSize: 13),
           ),
         ),
       );
@@ -109,9 +110,9 @@ class _NodeTile extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: selected ? accent.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.04),
+              color: selected ? accent.withValues(alpha: 0.14) : context.aura.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: selected ? accent : Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: selected ? accent : context.aura.line),
             ),
             child: Row(
               children: [
@@ -124,7 +125,7 @@ class _NodeTile extends StatelessWidget {
                       Text(
                         label,
                         style: TextStyle(
-                          color: selected ? accent : Colors.white,
+                          color: selected ? accent : context.aura.text,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -134,13 +135,13 @@ class _NodeTile extends StatelessWidget {
                         snippet,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                        style: TextStyle(color: context.aura.textFaint, fontSize: 11),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.call_split, size: 16, color: Colors.white38),
+                  icon: Icon(Icons.call_split, size: 16, color: context.aura.textFaint),
                   tooltip: 'Crear rama desde aquí',
                   onPressed: onBranch,
                 ),

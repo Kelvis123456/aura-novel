@@ -7,17 +7,18 @@ import 'lore_studio_controller.dart';
 import 'models/character_model.dart';
 import 'models/lore_item_model.dart';
 import '../projects/models/project_model.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// Studio de Personajes y Lore: two tabs (Personajes / Lore y Mundo) backed
 /// by [LoreStudioController], each with search, dark-glassmorphism cards,
 /// and a "Forzar inclusión" switch consumed by [ContextBuilderService].
 class LoreStudioScreen extends StatefulWidget {
-  final Color accentColor;
+  final Color? accentColor;
 
   /// Project the studio was opened from; null for the scratch editor.
   final String? projectId;
 
-  const LoreStudioScreen({super.key, this.accentColor = const Color(0xFFDC143C), this.projectId});
+  const LoreStudioScreen({super.key, this.accentColor, this.projectId});
 
   @override
   State<LoreStudioScreen> createState() => _LoreStudioScreenState();
@@ -60,7 +61,7 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
       context,
       existing: existing,
       otherCharacters: others,
-      accent: widget.accentColor,
+      accent: (widget.accentColor ?? context.aura.accent),
       projects: _projects,
       defaultProjectId: widget.projectId,
     );
@@ -71,7 +72,7 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
     final result = await LoreItemFormSheet.show(
       context,
       existing: existing,
-      accent: widget.accentColor,
+      accent: (widget.accentColor ?? context.aura.accent),
       projects: _projects,
       defaultProjectId: widget.projectId,
     );
@@ -82,20 +83,20 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
-        title: Text('¿Eliminar "$title"?', style: const TextStyle(color: Colors.white, fontSize: 16)),
-        content: const Text(
+        backgroundColor: context.aura.surface,
+        title: Text('¿Eliminar "$title"?', style: TextStyle(color: context.aura.text, fontSize: 16)),
+        content: Text(
           'Esta acción no se puede deshacer.',
-          style: TextStyle(color: Colors.white60),
+          style: TextStyle(color: context.aura.textDim),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+            child: Text('Eliminar', style: TextStyle(color: context.aura.danger)),
           ),
         ],
       ),
@@ -105,10 +106,10 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.accentColor;
+    final accent = (widget.accentColor ?? context.aura.accent);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -123,8 +124,8 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: accent,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white38,
+          labelColor: context.aura.text,
+          unselectedLabelColor: context.aura.textFaint,
           tabs: const [
             Tab(text: 'Personajes'),
             Tab(text: 'Lore y Mundo'),
@@ -132,11 +133,11 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -0.6),
+            center: const Alignment(0, -0.6),
             radius: 1.4,
-            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
+            colors: [context.aura.surface, context.aura.bg],
           ),
         ),
         child: _controller.isLoading
@@ -175,24 +176,24 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: context.aura.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: context.aura.line),
         ),
         child: TextField(
           controller: _searchFieldController,
           onChanged: _controller.updateSearchQuery,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          style: TextStyle(color: context.aura.text, fontSize: 14),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 20),
+            prefixIcon: Icon(Icons.search, color: context.aura.textFaint, size: 20),
             hintText: 'Buscar personajes o lore…',
-            hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+            hintStyle: TextStyle(color: context.aura.textFaint, fontSize: 14),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
             suffixIcon: _searchFieldController.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white38, size: 18),
+                    icon: Icon(Icons.close, color: context.aura.textFaint, size: 18),
                     onPressed: () {
                       _searchFieldController.clear();
                       _controller.updateSearchQuery('');
@@ -290,9 +291,9 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
         selected: selected,
         onSelected: (_) => _controller.updateCategoryFilter(category),
         selectedColor: accent.withValues(alpha: 0.3),
-        backgroundColor: Colors.white.withValues(alpha: 0.05),
-        labelStyle: TextStyle(color: selected ? Colors.white : Colors.white60, fontSize: 12),
-        side: BorderSide(color: selected ? accent : Colors.white24),
+        backgroundColor: context.aura.surface,
+        labelStyle: TextStyle(color: selected ? context.aura.text : context.aura.textDim, fontSize: 12),
+        side: BorderSide(color: selected ? accent : context.aura.textFaint),
       ),
     );
   }
@@ -304,7 +305,7 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white38, fontSize: 13),
+          style: TextStyle(color: context.aura.textFaint, fontSize: 13),
         ),
       ),
     );
@@ -349,11 +350,11 @@ class _CharacterCard extends StatelessWidget {
                   character.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                  style: TextStyle(color: context.aura.text, fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, size: 16, color: Colors.white38),
+                icon: Icon(Icons.delete_outline, size: 16, color: context.aura.textFaint),
                 onPressed: onDelete,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(width: 28, height: 28),
@@ -367,7 +368,7 @@ class _CharacterCard extends StatelessWidget {
                 character.aliases.join(', '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                style: TextStyle(color: context.aura.textFaint, fontSize: 11),
               ),
             ),
           const SizedBox(height: 8),
@@ -376,13 +377,13 @@ class _CharacterCard extends StatelessWidget {
               character.motivation.isEmpty ? 'Sin motivación definida.' : character.motivation,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.3),
+              style: TextStyle(color: context.aura.textDim, fontSize: 12, height: 1.3),
             ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Forzar en IA', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              Text('Forzar en IA', style: TextStyle(color: context.aura.textFaint, fontSize: 11)),
               Transform.scale(
                 scale: 0.75,
                 child: Switch(
@@ -446,7 +447,7 @@ class _LoreItemCard extends StatelessWidget {
                           item.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                          style: TextStyle(color: context.aura.text, fontWeight: FontWeight.w600, fontSize: 14),
                         ),
                       ),
                     ],
@@ -456,7 +457,7 @@ class _LoreItemCard extends StatelessWidget {
                     item.shortDescription.isEmpty ? 'Sin descripción.' : item.shortDescription,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                    style: TextStyle(color: context.aura.textDim, fontSize: 12),
                   ),
                   if (item.tags.isNotEmpty)
                     Padding(
@@ -482,7 +483,7 @@ class _LoreItemCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 16, color: Colors.white38),
+                  icon: Icon(Icons.delete_outline, size: 16, color: context.aura.textFaint),
                   onPressed: onDelete,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(width: 28, height: 28),
@@ -512,9 +513,9 @@ class _GlassCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: context.aura.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: context.aura.line),
           ),
           child: child,
         ),

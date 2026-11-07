@@ -3,16 +3,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'api_settings_controller.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// Connection settings screen for "AURA NOVEL" — dark glassmorphism styled
 /// form to configure a custom OpenAI-compatible endpoint, test it, and
 /// persist it via [ApiSettingsController].
 class ApiSettingsScreen extends StatefulWidget {
-  final Color accentColor;
+  final Color? accentColor;
 
   const ApiSettingsScreen({
     super.key,
-    this.accentColor = const Color(0xFFDC143C), // crimson accent
+    this.accentColor,
   });
 
   @override
@@ -79,7 +80,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.redAccent.shade400 : Colors.green.shade600,
+        backgroundColor: isError ? context.aura.danger : context.aura.success,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -87,21 +88,21 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.accentColor;
+    final accent = (widget.accentColor ?? context.aura.accent);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Conexión de API'),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -0.6),
+            center: const Alignment(0, -0.6),
             radius: 1.4,
-            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
+            colors: [context.aura.surface, context.aura.bg],
           ),
         ),
         child: _controller.isLoading
@@ -119,7 +120,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                           const SizedBox(height: 8),
                           Text(
                             _controller.statusDetail!,
-                            style: const TextStyle(color: Colors.white60, fontSize: 13),
+                            style: TextStyle(color: context.aura.textDim, fontSize: 13),
                           ),
                         ],
                         const SizedBox(height: 20),
@@ -152,7 +153,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                     _controller.obscureApiKey
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: Colors.white54,
+                                    color: context.aura.textDim,
                                   ),
                                   onPressed: _controller.toggleApiKeyVisibility,
                                 ),
@@ -226,11 +227,11 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 onChanged: (v) => _controller.updateContextChars(v.round()),
                                 accent: accent,
                               ),
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 4),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
                                 child: Text(
                                   'Tope para cada uno. Bájalo con modelos de ventana corta, súbelo con los grandes.',
-                                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                                  style: TextStyle(color: context.aura.textFaint, fontSize: 11),
                                 ),
                               ),
                             ],
@@ -253,7 +254,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                     : const Icon(Icons.wifi_tethering),
                                 label: const Text('Probar Conexión'),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: context.aura.text,
                                   side: BorderSide(color: accent.withValues(alpha: 0.6)),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                 ),
@@ -264,12 +265,12 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                               child: FilledButton.icon(
                                 onPressed: _controller.isSaving ? null : _handleSave,
                                 icon: _controller.isSaving
-                                    ? const SizedBox(
+                                    ? SizedBox(
                                         width: 16,
                                         height: 16,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: context.aura.text,
                                         ),
                                       )
                                     : const Icon(Icons.lock_outline),
@@ -283,10 +284,10 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'La API Key se cifra en el Keychain/Keystore del dispositivo.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(color: context.aura.textFaint, fontSize: 12),
                         ),
                       ],
                     ),
@@ -299,8 +300,8 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
 
   Widget _sectionTitle(String text) => Text(
         text.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white70,
+        style: TextStyle(
+          color: context.aura.textDim,
           fontSize: 12,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.2,
@@ -323,23 +324,23 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
       onChanged: onChanged,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 14),
+      style: TextStyle(color: context.aura.text, fontFamily: 'monospace', fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         errorText: errorText,
-        labelStyle: const TextStyle(color: Colors.white60),
-        hintStyle: const TextStyle(color: Colors.white24),
+        labelStyle: TextStyle(color: context.aura.textDim),
+        hintStyle: TextStyle(color: context.aura.textFaint),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.04),
+        fillColor: context.aura.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: BorderSide(color: context.aura.line),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          borderSide: BorderSide(color: context.aura.line),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -347,7 +348,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent),
+          borderSide: BorderSide(color: context.aura.danger),
         ),
       ),
     );
@@ -369,14 +370,14 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            Text(label, style: TextStyle(color: context.aura.textDim, fontSize: 13)),
             Text(displayValue, style: TextStyle(color: accent, fontSize: 13, fontWeight: FontWeight.w600)),
           ],
         ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: accent,
-            inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+            inactiveTrackColor: context.aura.line,
             thumbColor: accent,
             overlayColor: accent.withValues(alpha: 0.2),
             trackHeight: 3,
@@ -408,9 +409,9 @@ class _GlassPanel extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: context.aura.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: context.aura.line),
           ),
           child: child,
         ),
@@ -425,16 +426,16 @@ class _StatusBadge extends StatelessWidget {
   final Color accent;
   const _StatusBadge({required this.status, required this.accent});
 
-  Color get _color => switch (status) {
-        ConnectionStatus.connected => Colors.greenAccent.shade400,
-        ConnectionStatus.unconfigured => Colors.white38,
-        ConnectionStatus.savedUntested => Colors.amberAccent.shade200,
+  Color _color(AuraColors c) => switch (status) {
+        ConnectionStatus.connected => c.success,
+        ConnectionStatus.unconfigured => c.textFaint,
+        ConnectionStatus.savedUntested => c.warning,
         ConnectionStatus.testing => accent,
-        ConnectionStatus.unauthorized => Colors.orangeAccent.shade400,
-        ConnectionStatus.timeout => Colors.orangeAccent.shade400,
-        ConnectionStatus.networkError => Colors.redAccent.shade200,
-        ConnectionStatus.serverError => Colors.redAccent.shade200,
-        ConnectionStatus.invalidForm => Colors.redAccent.shade200,
+        ConnectionStatus.unauthorized => c.warning,
+        ConnectionStatus.timeout => c.warning,
+        ConnectionStatus.networkError => c.danger,
+        ConnectionStatus.serverError => c.danger,
+        ConnectionStatus.invalidForm => c.danger,
       };
 
   IconData get _icon => switch (status) {
@@ -451,21 +452,22 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = _color(context.aura);
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: _color.withValues(alpha: 0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: _color.withValues(alpha: 0.4)),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(_icon, size: 16, color: _color),
+            Icon(_icon, size: 16, color: color),
             const SizedBox(width: 8),
-            Text(status.label, style: TextStyle(color: _color, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(status.label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
