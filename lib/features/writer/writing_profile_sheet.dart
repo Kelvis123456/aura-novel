@@ -121,6 +121,17 @@ class _WritingProfileSheetState extends State<WritingProfileSheet> {
               ),
               activeThumbColor: c.accent,
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _p.polishAfter,
+              onChanged: (v) => setState(() => _p = _p.copyWith(polishAfter: v)),
+              title: Text('Pulir al terminar cada capítulo', style: TextStyle(color: c.text)),
+              subtitle: Text(
+                'Reescribe cada escena una vez para quitar tics de IA y frases planas. Tarda el doble.',
+                style: TextStyle(color: c.textFaint, fontSize: 12),
+              ),
+              activeThumbColor: c.accent,
+            ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _save,

@@ -67,6 +67,10 @@ class WritingProfile {
   /// `esencial` sends a much shorter craft prompt, for small or local models.
   final CraftLevel craftLevel;
 
+  /// Rewrite every scene of a finished chapter once, to strip machine tics and
+  /// flat sentences. Doubles the calls, so it is off by default.
+  final bool polishAfter;
+
   const WritingProfile({
     this.language = 'es',
     this.genre = '',
@@ -77,6 +81,7 @@ class WritingProfile {
     this.references = '',
     this.directions = '',
     this.craftLevel = CraftLevel.completo,
+    this.polishAfter = false,
   });
 
   static const languages = {
@@ -109,6 +114,7 @@ class WritingProfile {
     String? references,
     String? directions,
     CraftLevel? craftLevel,
+    bool? polishAfter,
   }) =>
       WritingProfile(
         language: language ?? this.language,
@@ -120,6 +126,7 @@ class WritingProfile {
         references: references ?? this.references,
         directions: directions ?? this.directions,
         craftLevel: craftLevel ?? this.craftLevel,
+        polishAfter: polishAfter ?? this.polishAfter,
       );
 
   /// The profile as prompt text. Empty fields are left out.
@@ -146,6 +153,7 @@ class WritingProfile {
         'references': references,
         'directions': directions,
         'craftLevel': craftLevel.name,
+        'polishAfter': polishAfter,
       });
 
   /// Empty or unreadable input gives the default profile, so a corrupt value
@@ -166,6 +174,7 @@ class WritingProfile {
         references: m['references'] as String? ?? '',
         directions: m['directions'] as String? ?? '',
         craftLevel: pick(CraftLevel.values, m['craftLevel'], CraftLevel.completo),
+        polishAfter: m['polishAfter'] == true,
       );
     } on Object {
       return const WritingProfile();

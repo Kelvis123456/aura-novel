@@ -30,6 +30,26 @@ class ProseDelta extends WriterEvent {
   const ProseDelta(this.text);
 }
 
+/// A scene is complete: its text, without the blank line that joins it to the previous one.
+class SceneDone extends WriterEvent {
+  final int index;
+  final String text;
+  const SceneDone(this.index, this.text);
+}
+
+/// The polish pass moved on to scene [index] of [total].
+class PolishStarted extends WriterEvent {
+  final int index;
+  final int total;
+  const PolishStarted(this.index, this.total);
+}
+
+/// Replaces everything written so far (the polish pass rewrote a scene).
+class ProseReplace extends WriterEvent {
+  final String text;
+  const ProseReplace(this.text);
+}
+
 class WriterFinished extends WriterEvent {
   final int words;
   const WriterFinished(this.words);
@@ -176,6 +196,7 @@ class ChapterWriter {
       if (segment.isEmpty) throw const MalformedResponseException('El modelo no devolvió texto para una escena.');
       written += segment.toString();
       newWords += countWords(segment.toString());
+      yield SceneDone(i, segment.toString().trim());
     }
     yield WriterFinished(newWords);
   }

@@ -30,3 +30,46 @@ Use when a name (character, place, fictional brand, or title) feels off, forgett
 
 ## How to apply to a draft
 Reply in the same language as the passage. First give a diagnosis: the problem state (does not feel right, names do not belong together, forgettable, wrong signals, impractical) and a layer-by-layer note on sound, meaning, culture and function, stating the conflict you find. Then return a rewritten passage using revised names, with a short mapping of old to new and the reason for each, based on the layer that failed. Offer at most three candidates per name, each with a one-line justification, and say which you recommend. Keep the author's plot, voice and any names that already work.
+
+## Deep notes
+
+The five naming problem states. Name the state before you touch the name, because each has a different cure.
+- N1, does not feel right: the reaction is vague and negative although the name meets every requirement. Judge the sound layer alone first, with the meaning set aside, then hunt for a hidden meaning conflict. Check that pronunciation is intuitive and that no unintended association hides in it.
+- N2, names do not belong together: define the phoneme inventory (which sounds are in), fix syllable templates (CV, CVC, CVCV), write the convention down, mark outliers, and regenerate only the outliers.
+- N3, forgettable: the name needs a distinctive sound feature (unusual but pronounceable) and a meaning hook such as a metaphor or an unexpected reference. Test it against the other names around it, and say it aloud to someone who has not seen it. If they cannot write it down, it fails.
+- N4, sends wrong signals: ask what the name sounds like it should be. Audit the sound conventions of the category, then check every culture the audience may speak.
+- N5, does not work practically: dictate it to a listener and compare their spelling with yours. Look for typo-prone letter pairs, and check that search for the name returns what you mean.
+
+Diagnostic order. Identify the state, analyze each of the four layers in turn, list the conflicts between layers, then recommend one intervention per conflict. Typical conflicts: sound says playful while meaning says solemn; the culture layer says elegant while the spelling invites typos; the meaning is excellent but the sounds are harsh. Fix the conflict, not the whole name.
+
+Worked examples.
+- Vortek for a meditation app: power sounds (k, t) and a tech x make it read as aggressive and technical. Move toward flow and depth sounds, giving names in the family of Serena or Calma. The same logic applies to a gentle healer named with hard stops, or a brutal warlord named with soft flowing vowels. Either can be a deliberate subversion, but only when the author knows it is one.
+- Kael, Brightwood, Zephyrine: a short Germanic CVC, an English compound and a flowing Greek-French form. Three origins, no shared pattern. Pick one origin and adapt the other two to it, or build one phoneme inventory and derive all three from it.
+- Streamline Solutions: a descriptive name plus a generic suffix follows the category too closely. Find a metaphorical angle or a coined word with a meaning hook.
+
+Professional five-phase process, for names with real stakes such as a series title or a central fictional brand. Run each phase fully before the next, ideally in separate sittings.
+- Discovery: explore patterns and document them without generating any names.
+- Synthesis: generate 50 to 100 raw candidates from those patterns, with no judging.
+- Evaluation: filter the pool through the four layers into a ranked shortlist.
+- Validation: check finalists against outside reality: existing works, real people and places, other languages, search results.
+- Documentation: record the choice and the rationale.
+
+Quick fixes, expanded.
+- Harsh: swap stops for flow sounds (l, r) or add open vowels, for instance Krag toward Kora.
+- Weak: shorten to one or two syllables or add a power consonant.
+- Generic: add one distinctive phoneme or an unexpected pairing; do not add three.
+- Foreign: lean on high-frequency English sounds, so a reader can say it without a guide.
+- Dated: compare with current conventions in the category and update the pattern, not just one name.
+
+Cast and map hygiene.
+- Distinctiveness inside a cast: avoid shared initials, shared lengths and shared endings among characters who appear in the same scenes. A reader skimming should never confuse two names.
+- Regional coherence: places in one region share sounds, and the gap between regions should be audible. If a reader can guess which kingdom a town belongs to from its name, the system works.
+- Rare sounds are seasoning. One x, z or zh per name is plenty, and a cast full of them becomes unreadable.
+- Apostrophes: if you use one, decide what it marks (a glottal stop, a clan joiner, a dropped syllable) and apply it the same way everywhere, or delete it.
+
+Edge cases.
+- Intentional mismatch is legitimate when the story uses it as irony, or when a name is borrowed from a different culture inside the fiction. Mark it so the reader reads it as a choice.
+- A name that fails only in one language is a real defect if the audience includes that language.
+- A name the author loves but readers stumble over should lose to the reader, unless the stumble itself is the effect.
+- Names should show cultural evolution: a worn, shortened form used by commoners beside a formal long form for ceremony makes a place feel lived in.
+

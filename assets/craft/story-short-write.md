@@ -42,3 +42,40 @@ Use for complete short stories of roughly 8,000 to 20,000 words (serialized-plat
 
 ## How to apply
 Write the story as finished prose, never a summary or outline, section by section in order, two or three sections per call. Use numbered section markers (### 1., ### 2.), one line break between paragraphs, and dialogue on its own lines. Each call must continue from the last 300 to 500 words of the previous text and a short note of what is already revealed, the emotional position, open clues and the next link. Do not recap, restate revealed information, or reopen the opening. Hit every section's minimum length and the whole story's minimum. Build toward the single twist, end within about 500 words after it, and finish with a quiet image or a verdict line. Match the chosen genre voice and language. Output only story text, with no commentary, headings other than section markers, or checklists.
+
+
+## Deep notes
+
+### Twist types: setup and reveal
+- Identity twist: plant three behavioral tells, never narrator statements (a neighbor who knows the pipe layout too well, who mentions when the lights go off, whose gray coat appears on the camera footage). Reveal inside a scene; never let the character announce "actually I am X".
+- Perspective twist: every narrated fact is true but incomplete, and the narrator sincerely believes their reading. Reveal through another character's testimony or a scene the narrator did not see. A narrator who knowingly misleads is cheating.
+- Motive twist: give a plausible surface motive with a tiny contradiction in behavior (she says she wants the husband back but only asks about the house). Reveal by forcing a choice between A and B under pressure; the choice exposes the real motive.
+- Timeline twist: do not lie, only reorder. Use tense, season and the age of objects as hidden clues; reveal through an impossible timestamp. Draw the timeline before drafting.
+- Information twist: one false "fact" from a reliable source drives everyone's actions; new evidence overturns it and every earlier scene is reread.
+- Perception twist: build one emotional color all the way through (a cold mother), hide a tiny reverse detail in each cruel scene (money slipped into the bag after the scolding), then flip the whole color with one object. Emotion goes from hatred to debt.
+- Best reveal position: identity 65-75%, perspective 70-80%, motive 75-85%, timeline 80-90%, information 70-80%, perception 75-90%. Never before 50% or after 95%. Two twists: first at 55-65%, second at 80-90%. Three layers only above 15,000 words, at about 50-60%, 75-80%, 90-95%, the last one shortest.
+
+### Misdirection
+- Additive: layer a false reading over true clues so each can be explained two ways. Subtractive: hide part of the information, for example the protagonist learns only the good half.
+- Check: at least one false trail readers truly believe; a reader who sees only the outline must not guess the twist; readers who know the truth before 50% are watching delayed disclosure, not a twist.
+
+### Reveal mechanisms and retribution
+- Four ways: physical evidence (the golden lock that is copper inside), a witness at the edge (the old nurse's dying letter), overhearing (a phone call on the balcony), peeling layers (girlfriend is not who she said; she is a fraudster; the pregnancy is fake; the brother is already trapped).
+- Antagonist blueprint: identity, motive, method, fatal weakness, retribution. Escalate small wrongs (words), middle wrongs (money, reputation), large wrongs (drugging, framing). Types: controller, greedy, disguised, arrogant, soft-knife.
+- Retribution matches the wrong at intensity 1.0 to 1.2 times; give it two or three sentences, not a long scene. Forms: legal, social death, wrong coming back on them, collapse after winning everything.
+
+### Emotional design
+- Three strokes: bond (front third, concrete objects, numbers, repeated habits; "eight years", a ledger total, a wooden horse), tear (contrast, mismatch, delayed truth; only as deep as the bond), residue (a continued ordinary action, an object, a refusal to look back).
+- Turn the emotion every 3 to 5 sections, each turn with a trigger. Failure modes: flat (5+ sections with no turn), rushed (a big turn with one section of setup, give it three), fake pain (bond too abstract), split halves, dragging ending (more than 500 words explaining after the twist), out-of-character behavior.
+
+### Hooks
+- Chapter-end types: sudden reveal ("The letter's date was seven days after his death"), crisis, unfinished action, identity flip, dilemma, mystery object, countdown, promise or threat, impossible disappearance, hidden meaning ("You look like your sister" to an only child), changed image, echo of the opening line with one detail changed, a reaction with the cause withheld.
+- Three-part hook inside a section: plant (first 30%), grow (middle 50%), detonate or delay (last 20%). Delayed detonation pulls hardest. Keep two suspense lines running at all times, a main and a side, and detonate them together at the end.
+
+### Dialogue power
+- Length is status. The aggressor lectures in three to five lines; the controlling character answers in one word or a fact: "Get out." / "Your mother's passbook, the PIN is my birthday."
+- Dead-heart pattern: replies shrink from defense to silence to "Whatever." A line that wins is under ten characters with no action beat; the pressed side runs 20+ with beats (fist, lip).
+
+### Outline and checks
+- Outline one line per section: function, main event, three to five sub-events (each "who did what" plus a tag), emotion, cause chain (cause, action, result, new problem), what the reader newly learns, hook, plant, action or stillness, dialogue density. Section gap between a plant and its reveal: at least three.
+- Remove first: "not A but B", "carrying a hint of", "he knew that", "a flicker of X crossed his eyes", "the corner of his mouth curved", "surged in his heart", closing previews like "he did not know that". Keep first-person verdicts and aftermath previews.

@@ -164,4 +164,48 @@ void main() {
       expect(WritingProfile.fromJsonString('{"language":"xx","pov":"raro"}').pov, Pov.terceraLimitada);
     });
   });
+
+  group('módulos de oficio completos', () {
+    test('removeSection quita solo la sección pedida', () {
+      const md = '# x\n## A\nuno\n## Deep notes\ndos\n## Otra\ntres';
+      expect(CraftLibrary.removeSection(md, 'Deep notes'), '# x\n## A\nuno\n## Otra\ntres');
+    });
+
+    test('los módulos largos traen notas profundas y se pueden quitar', () async {
+      final lib = CraftLibrary();
+      for (final id in ['prose-style', 'long-form-hooks', 'book-marketing', 'summarization', 'research-workflow']) {
+        final full = await lib.full(id);
+        expect(full, contains('## Deep notes'), reason: id);
+        expect(await lib.full(id, deep: false), isNot(contains('## Deep notes')), reason: id);
+      }
+    });
+
+    test('el prompt de herramienta lleva las notas profundas salvo con un modelo pequeño', () async {
+      final big = await PromptComposer(CraftLibrary()).toolSystem('revision', const WritingProfile());
+      final small = await PromptComposer(CraftLibrary(), preferShort: () async => true).toolSystem('revision', const WritingProfile());
+      expect(big.content, contains('## Deep notes'));
+      expect(small.content, isNot(contains('## Deep notes')));
+      expect(small.content.length, lessThan(big.content.length));
+    });
+
+    test('el prompt de pulido lleva la orden de conservar los hechos y las reglas de oficio', () async {
+      final text = (await PromptComposer(CraftLibrary()).polishSystem(const WritingProfile())).content;
+      expect(text, contains('POLISH PASS'));
+      expect(text, contains('Keep every event'));
+      expect(text, contains('[Quitar tics de IA]'));
+    });
+
+    test('hay módulos de publicar, investigar y resumir en el registro', () {
+      expect(CraftLibrary.byId('book-marketing')!.group, CraftGroup.publicar);
+      expect(CraftLibrary.byId('research-workflow'), isNotNull);
+      expect(CraftLibrary.byId('summarization'), isNotNull);
+      expect(CraftLibrary.coreIds, contains('long-form-style'));
+    });
+
+    test('el perfil guarda pulir al terminar', () {
+      final back = WritingProfile.fromJsonString(const WritingProfile(polishAfter: true).toJsonString());
+      expect(back.polishAfter, isTrue);
+      expect(const WritingProfile().polishAfter, isFalse);
+    });
+  });
 }

@@ -61,7 +61,18 @@ void main() {
       if (body['stream'] == true) {
         return http.StreamedResponse(Stream.value(utf8.encode(_sse('Respuesta ${requests.length}.'))), 200);
       }
-      final last = ((body['messages'] as List).last as Map<String, dynamic>)['content'] as String;
+      final messages = (body['messages'] as List).cast<Map<String, dynamic>>();
+      final system = messages.first['content'] as String;
+      final last = messages.last['content'] as String;
+      Future<http.StreamedResponse> reply(String content) async => http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'choices': [{'message': {'content': content}}]}))),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+      if (system.contains('POLISH PASS')) return reply(last.replaceAll('Respuesta', 'Escena'));
+      if (system.contains('You plan research')) return reply('["Primera pregunta larga", "Segunda pregunta larga"]');
+      if (system.contains('turn research answers')) return reply('NOTAS: nota sintetizada sobre la lente Fresnel.');
+      if (system.contains('You are a research assistant for a fiction author. Answer factually')) return reply('Respuesta de investigación a: $last');
       if (last.startsWith('Plan a chapter')) {
         return http.StreamedResponse(
           Stream.value(utf8.encode(jsonEncode({'choices': [{'message': {'content': '["Mara sube.", "Mara encuentra la lámpara."]'}}]}))),
@@ -174,7 +185,7 @@ void main() {
 
   test('parar una investigación y empezar otra petición no mezcla los estados', () async {
     holdResearch = Completer<void>();
-    final research = controller.send('Lentes Fresnel', ChatMode.research);
+    final research = controller.send('Lentes Fresnel', ChatMode.research, deepResearch: false);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(controller.generating, isTrue);
 
@@ -192,7 +203,7 @@ void main() {
   });
 
   test('investigar guarda la nota y se convierte en ficha de Mundo del proyecto', () async {
-    await controller.send('Cómo funciona una lente Fresnel', ChatMode.research);
+    await controller.send('Cómo funciona una lente Fresnel', ChatMode.research, deepResearch: false);
     final note = controller.entries.last;
     expect(note.kind, 'research');
     expect(note.content, contains('Fresnel'));
@@ -230,5 +241,37 @@ void main() {
     expect(controller.entries, isEmpty);
     await controller.selectProject('p');
     expect(controller.entries, hasLength(2));
+  });
+
+  test('la investigación profunda planea, responde cada pregunta y sintetiza', () async {
+    await controller.send('Cómo funciona una lente Fresnel', ChatMode.research);
+
+    // plan + 2 respuestas + síntesis
+    expect(requests, hasLength(4));
+    expect(controller.entries.last.content, startsWith('NOTAS: nota sintetizada'));
+    final synth = ((requests.last['messages'] as List).last as Map<String, dynamic>)['content'] as String;
+    expect(synth, contains('Respuesta de investigación a:'));
+    expect(synth, contains('Primera pregunta larga'));
+  });
+
+  test('pulir al terminar reescribe cada escena y conserva el resto', () async {
+    await controller.saveProfile(const WritingProfile(polishAfter: true));
+
+    await controller.send('Mara sube a la torre', ChatMode.chapter, words: 1800);
+
+    // plan + 2 escenas + 2 pulidos
+    expect(requests, hasLength(5));
+    final text = controller.entries.last.content;
+    expect(text, isNot(contains('Respuesta')));
+    expect(RegExp('Escena').allMatches(text), hasLength(2));
+    expect(text, contains('\n\n'));
+    expect(controller.generating, isFalse);
+  });
+
+  test('sin pulir al terminar no hay llamadas de pulido', () async {
+    await controller.send('Mara sube a la torre', ChatMode.chapter, words: 1800);
+
+    expect(requests, hasLength(3));
+    expect(controller.entries.last.content, contains('Respuesta'));
   });
 }
