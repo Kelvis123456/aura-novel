@@ -106,6 +106,13 @@ class LoreRepository {
     await db.insert('lore_items', item.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Removes the sheets that belong to one project. Shared-universe sheets (no project) stay.
+  Future<void> deleteForProject(String projectId) async {
+    final db = await _database;
+    await db.delete('characters', where: 'project_id = ?', whereArgs: [projectId]);
+    await db.delete('lore_items', where: 'project_id = ?', whereArgs: [projectId]);
+  }
+
   Future<void> deleteLoreItem(String id) async {
     final db = await _database;
     await db.delete('lore_items', where: 'id = ?', whereArgs: [id]);
