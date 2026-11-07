@@ -7,7 +7,10 @@ import 'writing_profile.dart';
 class PromptComposer {
   final CraftLibrary library;
 
-  PromptComposer(this.library);
+  /// True when the model in use can't take the long craft prompt (a small local one).
+  final Future<bool> Function()? preferShort;
+
+  PromptComposer(this.library, {this.preferShort});
 
   /// For prose that goes straight into the manuscript.
   Future<ChatMessage> proseSystem(WritingProfile profile, {bool longForm = false}) async {
@@ -42,7 +45,7 @@ class PromptComposer {
   }
 
   Future<String> _craft(WritingProfile profile, {List<String> extra = const []}) async {
-    if (profile.craftLevel == CraftLevel.esencial) return library.essentials();
+    if (profile.craftLevel == CraftLevel.esencial || await preferShort?.call() == true) return library.essentials();
     final ids = [...CraftLibrary.coreIds, ...extra];
     final blocks = <String>[];
     for (final id in ids) {

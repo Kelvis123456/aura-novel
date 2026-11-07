@@ -69,3 +69,12 @@ La app generaba poco y genérico: `maxTokens` de 800 y un prompt de una línea (
 - "Añadir al capítulo" crea una versión nueva sobre la más reciente. Si ese capítulo está abierto en Escribir, su próximo "Guardar versión" parte de la versión que cargó y deja el texto añadido en una rama lateral.
 - "Otra vez" en un capítulo que ya se añadió al manuscrito sigue el texto del capítulo, que ya incluye lo añadido.
 - Con un modelo que recorta la respuesta por su propio límite de tokens, una escena puede quedar corta; la app no avisa de ese corte.
+
+## 2026-11-07: Dos proveedores de IA: servidor y modelo dentro del teléfono
+La app puede hablar con un servidor OpenAI-compatible o correr un modelo en el propio teléfono. Se elige en Ajustes de API ("Servidor (API)" o "En este teléfono") y se lee en cada petición, así que cambiar surte efecto al instante. Cuatro decisiones:
+- **`LlmClient` como interfaz.** Los servicios dependían de la clase concreta `DynamicOpenAIClient`. Ahora dependen de `LlmClient`, y `RoutingLlmClient` reparte entre el cliente remoto y `LocalLlmClient`. No hubo que tocar el asistente, el escritor de capítulos ni el editor.
+- **llama.cpp con el paquete `llamadart`** (MIT, publicador verificado, 160/160 en pub.dev, binarios nativos que su build baja de GitHub). Lo elegí frente a `llama_cpp_dart` por tener binarios precompilados y estar mantenido. Costo: obligó a subir `archive` a 4.5 y `share_plus` a 10.1, el APK de depuración pesa unos 380 MB (varias arquitecturas) y el primer build baja los binarios. Es una dependencia que ejecuta código nativo, no es trivial de auditar.
+- **El modelo no va en el APK.** Se descarga una vez desde Hugging Face con barra de progreso, pausa y reanudación (`Range`), y se guarda en el almacenamiento privado. El catálogo trae Gemma 3 4B y 1B sin negativas (GGUF Q4_K_M, 2,5 GB y 0,8 GB).
+- **Ventana pequeña.** El modelo local se carga con 6144 tokens de contexto. Por eso usa siempre el prompt de oficio corto, guarda menos turnos de charla (4, recortados), el escritor de capítulos arrastra menos texto previo y el tope de tokens de respuesta se recorta a lo que queda de ventana tras el prompt. Antes de ese recorte la generación se quedaba en blanco sin error.
+
+Probado: carga y responde en el emulador de Android (x86_64, 2,5 GB de RAM, muy lento: unos 4 minutos para un párrafo). La velocidad real en un teléfono arm64 sin medir.

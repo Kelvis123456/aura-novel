@@ -1,15 +1,15 @@
-import '../../core/network/dynamic_openai_client.dart';
 import '../../core/network/exceptions/api_exceptions.dart';
 import '../../core/network/models/chat_completion_request.dart';
 import '../../core/network/models/chat_message.dart';
 import '../../core/storage/secure_config_storage.dart';
 import 'models/project_model.dart';
 import 'project_repository.dart';
+import '../../core/network/llm_client.dart';
 
 /// Writes and reads the per-chapter recaps that stand in for earlier
 /// chapters in the prompt, so a long novel doesn't need to fit in it.
 class ChapterSummaryService {
-  final DynamicOpenAIClient _client;
+  final LlmClient _client;
   final ProjectRepository _repository;
   final SecureConfigStorage _storage;
 
@@ -17,7 +17,7 @@ class ChapterSummaryService {
   static const defaultMaxContextChars = 3000;
 
   ChapterSummaryService({
-    required DynamicOpenAIClient client,
+    required LlmClient client,
     required ProjectRepository repository,
     required SecureConfigStorage storage,
   })  : _client = client,

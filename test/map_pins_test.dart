@@ -107,4 +107,22 @@ void main() {
     await migrated.saveMapPin(pin('a'));
     expect(await migrated.getMapPins('p'), hasLength(1));
   });
+
+  test('migra una base v7 sin la columna meta del chat', () async {
+    await repo.close();
+    final path = p.join(tempDir.path, 'v7.db');
+    final old = await openDatabase(path, version: 7, onCreate: (db, _) async {
+      await db.execute("CREATE TABLE projects (id TEXT PRIMARY KEY, title TEXT NOT NULL, synopsis TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, calendar TEXT NOT NULL DEFAULT '', map_path TEXT NOT NULL DEFAULT '', writing_profile TEXT NOT NULL DEFAULT '')");
+      await db.execute("CREATE TABLE chat_messages (id TEXT PRIMARY KEY, project_id TEXT, role TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL DEFAULT 'chat', created_at TEXT NOT NULL)");
+      await db.insert('chat_messages', {'id': 'm', 'role': 'user', 'content': 'hola', 'created_at': '2026-01-01T00:00:00'});
+    });
+    await old.close();
+
+    final migrated = ProjectRepository(databasePath: path);
+    addTearDown(migrated.close);
+
+    final chat = await migrated.getChat(null);
+    expect(chat.single.content, 'hola');
+    expect(chat.single.meta, isEmpty);
+  });
 }

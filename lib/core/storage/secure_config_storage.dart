@@ -20,6 +20,12 @@ class ApiEndpointConfig {
   /// web search (a Perplexity or OpenRouter online model) makes the notes better.
   final String researchModelId;
 
+  /// `remote` (an OpenAI-compatible server) or `local` (a model inside the phone).
+  final String provider;
+
+  /// Id of the downloaded model to use when [provider] is `local`.
+  final String localModelId;
+
   static const defaultContextChars = 3000;
 
   const ApiEndpointConfig({
@@ -32,10 +38,15 @@ class ApiEndpointConfig {
     this.presencePenalty = 0.2,
     this.contextChars = defaultContextChars,
     this.researchModelId = '',
+    this.provider = 'remote',
+    this.localModelId = '',
   });
 
-  bool get isComplete =>
-      baseUrl.trim().isNotEmpty && apiKey.trim().isNotEmpty && modelId.trim().isNotEmpty;
+  bool get isLocal => provider == 'local';
+
+  bool get isComplete => isLocal
+      ? localModelId.trim().isNotEmpty
+      : baseUrl.trim().isNotEmpty && apiKey.trim().isNotEmpty && modelId.trim().isNotEmpty;
 
   ApiEndpointConfig copyWith({
     String? baseUrl,
@@ -47,6 +58,8 @@ class ApiEndpointConfig {
     double? presencePenalty,
     int? contextChars,
     String? researchModelId,
+    String? provider,
+    String? localModelId,
   }) {
     return ApiEndpointConfig(
       baseUrl: baseUrl ?? this.baseUrl,
@@ -58,6 +71,8 @@ class ApiEndpointConfig {
       presencePenalty: presencePenalty ?? this.presencePenalty,
       contextChars: contextChars ?? this.contextChars,
       researchModelId: researchModelId ?? this.researchModelId,
+      provider: provider ?? this.provider,
+      localModelId: localModelId ?? this.localModelId,
     );
   }
 }
@@ -78,6 +93,8 @@ class SecureConfigStorage {
   static const _keyPresencePenalty = 'aura.api.presence_penalty';
   static const _keyContextChars = 'aura.api.context_chars';
   static const _keyResearchModel = 'aura.api.research_model';
+  static const _keyProvider = 'aura.api.provider';
+  static const _keyLocalModel = 'aura.api.local_model';
 
   final FlutterSecureStorage _storage;
 
@@ -99,6 +116,8 @@ class SecureConfigStorage {
       _storage.write(key: _keyPresencePenalty, value: config.presencePenalty.toString()),
       _storage.write(key: _keyContextChars, value: config.contextChars.toString()),
       _storage.write(key: _keyResearchModel, value: config.researchModelId.trim()),
+      _storage.write(key: _keyProvider, value: config.provider),
+      _storage.write(key: _keyLocalModel, value: config.localModelId.trim()),
     ]);
   }
 
@@ -113,18 +132,24 @@ class SecureConfigStorage {
       _storage.read(key: _keyPresencePenalty),
       _storage.read(key: _keyContextChars),
       _storage.read(key: _keyResearchModel),
+      _storage.read(key: _keyProvider),
+      _storage.read(key: _keyLocalModel),
     ]);
 
     final baseUrl = values[0];
     final apiKey = values[1];
     final modelId = values[2];
 
-    if (baseUrl == null || apiKey == null || modelId == null) return null;
+    final provider = values[9] == 'local' ? 'local' : 'remote';
+    final localModelId = values[10] ?? '';
+    // A local setup needs no server fields: an install that only chose a local model still has a config.
+    if (provider == 'remote' && (baseUrl == null || apiKey == null || modelId == null)) return null;
+    if (provider == 'local' && localModelId.isEmpty) return null;
 
     return ApiEndpointConfig(
-      baseUrl: baseUrl,
-      apiKey: apiKey,
-      modelId: modelId,
+      baseUrl: baseUrl ?? '',
+      apiKey: apiKey ?? '',
+      modelId: modelId ?? '',
       temperature: double.tryParse(values[3] ?? '') ?? 0.9,
       // 800 was the old default, too short for scenes of prose: installs that saved it get the new one.
       maxTokens: _migratedMaxTokens(int.tryParse(values[4] ?? '')),
@@ -133,6 +158,8 @@ class SecureConfigStorage {
       // Installs that saved their config before this setting existed have no value.
       contextChars: int.tryParse(values[7] ?? '') ?? ApiEndpointConfig.defaultContextChars,
       researchModelId: values[8] ?? '',
+      provider: provider,
+      localModelId: localModelId,
     );
   }
 
@@ -149,6 +176,8 @@ class SecureConfigStorage {
       _storage.delete(key: _keyPresencePenalty),
       _storage.delete(key: _keyContextChars),
       _storage.delete(key: _keyResearchModel),
+      _storage.delete(key: _keyProvider),
+      _storage.delete(key: _keyLocalModel),
     ]);
   }
 }

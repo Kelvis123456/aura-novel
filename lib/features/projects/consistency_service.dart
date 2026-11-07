@@ -1,4 +1,3 @@
-import '../../core/network/dynamic_openai_client.dart';
 import '../../core/network/exceptions/api_exceptions.dart';
 import '../../core/network/models/chat_completion_request.dart';
 import '../../core/network/models/chat_message.dart';
@@ -7,11 +6,12 @@ import '../lore/context_builder_service.dart';
 import 'chapter_summary_service.dart';
 import 'models/project_model.dart';
 import 'project_repository.dart';
+import '../../core/network/llm_client.dart';
 
 /// Asks the model to compare a chapter against the lore sheets and the
 /// recaps of earlier chapters, and lists what contradicts them.
 class ConsistencyService {
-  final DynamicOpenAIClient _client;
+  final LlmClient _client;
   final ProjectRepository _repository;
   final ContextBuilderService _contextBuilder;
   final ChapterSummaryService _summaries;
@@ -22,7 +22,7 @@ class ConsistencyService {
   static const noIssuesMarker = 'SIN_CONTRADICCIONES';
 
   ConsistencyService({
-    required DynamicOpenAIClient client,
+    required LlmClient client,
     required ProjectRepository repository,
     required ContextBuilderService contextBuilder,
     required ChapterSummaryService summaries,

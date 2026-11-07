@@ -16,7 +16,7 @@ import 'models/timeline_event_model.dart';
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 7;
+  static const _dbVersion = 8;
   static final _random = Random();
 
   final String? _databasePath;
@@ -90,6 +90,10 @@ class ProjectRepository {
         if (oldVersion < 7) {
           await db.execute("ALTER TABLE projects ADD COLUMN writing_profile TEXT NOT NULL DEFAULT ''");
           await _createChatTable(db);
+        }
+        if (oldVersion == 7) {
+          // v7 builds made before the `meta` column existed.
+          await db.execute("ALTER TABLE chat_messages ADD COLUMN meta TEXT NOT NULL DEFAULT ''");
         }
       },
     );
