@@ -222,5 +222,13 @@ void main() {
       expect(back.voiceSample, 'Llovía sin ganas.');
     });
   });
+
+  test('notas al margen es una herramienta de estructura y pide citas literales', () async {
+    final m = CraftLibrary.byId('margin-notes')!;
+    expect(m.group, CraftGroup.estructura);
+    final full = await CraftLibrary().full('margin-notes');
+    expect(full, contains('verbatim'));
+    expect(full, contains('MAJOR'));
+  });
 }
 
