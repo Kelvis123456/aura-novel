@@ -131,6 +131,13 @@ class WriterChatController extends ChangeNotifier {
       _notify();
       await _repo.saveChatEntry(user);
       await _respond(user);
+    } on Object catch (e) {
+      // A failure outside the model call (the database, say) must not vanish silently.
+      if (_busyToken == busy) {
+        error = 'Error inesperado: $e';
+        generating = false;
+        _notify();
+      }
     } finally {
       if (_busyToken == busy) _busyToken = null;
     }
@@ -151,6 +158,13 @@ class WriterChatController extends ChangeNotifier {
       entries = entries.sublist(0, lastUser + 1);
       _notify();
       await _respond(entries.last);
+    } on Object catch (e) {
+      // A failure outside the model call (the database, say) must not vanish silently.
+      if (_busyToken == busy) {
+        error = 'Error inesperado: $e';
+        generating = false;
+        _notify();
+      }
     } finally {
       if (_busyToken == busy) _busyToken = null;
     }
@@ -176,6 +190,13 @@ class WriterChatController extends ChangeNotifier {
       _notify();
       await _repo.saveChatEntry(user);
       await _respond(user);
+    } on Object catch (e) {
+      // A failure outside the model call (the database, say) must not vanish silently.
+      if (_busyToken == busy) {
+        error = 'Error inesperado: $e';
+        generating = false;
+        _notify();
+      }
     } finally {
       if (_busyToken == busy) _busyToken = null;
     }

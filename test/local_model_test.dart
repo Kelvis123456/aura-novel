@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:aura_novel/core/network/llm_client.dart';
+import 'package:aura_novel/core/network/local_llm_client.dart';
 import 'package:aura_novel/core/network/models/chat_completion_request.dart';
 import 'package:aura_novel/core/network/models/chat_completion_response.dart';
 import 'package:aura_novel/core/network/models/chat_message.dart';
@@ -203,6 +204,24 @@ void main() {
       FlutterSecureStorage.setMockInitialValues({'aura.api.base_url': 'https://a', 'aura.api.key': 'k', 'aura.api.model_id': 'm', 'aura.api.provider': 'raro'});
 
       expect((await SecureConfigStorage().load())!.provider, 'remote');
+    });
+  });
+
+  group('LocalLlmClient.outputBudget', () {
+    ChatCompletionRequest req(int chars, {int? max}) => ChatCompletionRequest(model: 'm', maxTokens: max, messages: [ChatMessage.user('a' * chars)]);
+
+    test('respeta lo pedido cuando cabe', () {
+      expect(LocalLlmClient.outputBudget(req(300, max: 500), 6144), 500);
+    });
+
+    test('recorta a lo que queda de ventana tras el prompt', () {
+      // 9000 chars ~ 3000 tokens: de 6144 quedan unos 3000 menos el margen
+      expect(LocalLlmClient.outputBudget(req(9000, max: 4096), 6144), lessThan(3100));
+      expect(LocalLlmClient.outputBudget(req(9000, max: 4096), 6144), greaterThan(2900));
+    });
+
+    test('un prompt que llena la ventana deja menos del mínimo', () {
+      expect(LocalLlmClient.outputBudget(req(18000, max: 4096), 6144), lessThan(LocalLlmClient.minOutputTokens));
     });
   });
 }

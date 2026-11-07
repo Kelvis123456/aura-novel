@@ -29,6 +29,19 @@ class LocalLlmClient implements LlmClient {
       : _storage = storage,
         _manager = manager;
 
+  /// Fewest tokens of room a reply needs to be worth starting.
+  static const minOutputTokens = 200;
+
+  /// Tokens the reply may use: what the caller asked for, but never more than the
+  /// context window has left after the prompt (Spanish runs about 3 characters
+  /// per token). Asking for more makes llama.cpp stop before writing anything.
+  static int outputBudget(ChatCompletionRequest request, int window) {
+    final promptChars = request.messages.fold<int>(0, (sum, m) => sum + m.content.length);
+    final left = window - (promptChars / 3).ceil() - 96;
+    final asked = request.maxTokens ?? 1024;
+    return asked < left ? asked : left;
+  }
+
   /// Role mapping, kept apart so it can be tested without the native runtime.
   static String roleName(String role) => switch (role) {
         ChatRole.system => 'system',
@@ -87,15 +100,21 @@ class LocalLlmClient implements LlmClient {
     await previous;
     try {
       final engine = await _engineFor(config.localModelId);
+      final room = outputBudget(request, contextSize);
+      if (room < minOutputTokens) {
+        throw const MalformedResponseException('El texto de contexto no cabe en el modelo del teléfono. Baja el contexto de lore en Ajustes o borra la conversación.');
+      }
       final params = GenerationParams(
-        maxTokens: request.maxTokens ?? 1024,
+        maxTokens: room,
         temp: request.temperature ?? 0.8,
         topP: request.topP ?? 0.95,
         penalty: 1.1 + (request.frequencyPenalty ?? 0).clamp(0.0, 1.0) * 0.1,
         presencePenalty: (request.presencePenalty ?? 0).clamp(0.0, 1.0),
       );
+      var wrote = false;
       try {
         await for (final text in engine.create(_toLlama(request.messages), params: params).textDeltas()) {
+          wrote = true;
           yield ChatCompletionChunk(deltaContent: text);
         }
       } on ApiClientException {
@@ -103,6 +122,7 @@ class LocalLlmClient implements LlmClient {
       } on Object catch (e) {
         throw MalformedResponseException('El modelo local falló al escribir: $e');
       }
+      if (!wrote) throw const MalformedResponseException('El modelo del teléfono no devolvió texto. Prueba con un mensaje más corto o borra la conversación.');
       yield ChatCompletionChunk.done();
     } finally {
       done.complete();

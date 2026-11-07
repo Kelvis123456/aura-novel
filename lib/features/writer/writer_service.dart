@@ -23,6 +23,7 @@ class WriterService {
   /// How many earlier turns go back to the model. Older ones are dropped
   /// rather than summarized: the manuscript itself is the memory.
   static const historyTurns = 16;
+  static const localHistoryTurns = 4;
 
   WriterService({
     required LlmClient client,
@@ -62,7 +63,9 @@ class WriterService {
     final config = await _storage.load();
     if (config == null || !config.isComplete) throw const MissingConfigException();
 
-    final recent = history.length > historyTurns ? history.sublist(history.length - historyTurns) : history;
+    // A model in the phone has a small window: fewer turns, every one clipped.
+    final turns = config.isLocal ? localHistoryTurns : historyTurns;
+    final recent = history.length > turns ? history.sublist(history.length - turns) : history;
     final request = ChatCompletionRequest(
       model: config.modelId,
       temperature: config.temperature,
@@ -77,7 +80,7 @@ class WriterService {
         for (var i = 0; i < recent.length; i++)
           ChatMessage(
             role: recent[i].role,
-            content: i >= recent.length - 2 ? recent[i].content : ChapterSummaryService.clipMiddle(recent[i].content, 1800),
+            content: (!config.isLocal && i >= recent.length - 2) ? recent[i].content : ChapterSummaryService.clipMiddle(recent[i].content, config.isLocal ? 1200 : 1800),
           ),
       ],
     );
