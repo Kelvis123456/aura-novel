@@ -56,6 +56,7 @@ class EditorController extends ChangeNotifier {
   final SecureConfigStorage _storage;
   final ContextBuilderService? _contextBuilder;
   final Future<ChatMessage?> Function(int maxChars)? _storyContext;
+  final String? _projectId;
 
   /// [client]/[storage]/[contextBuilder] are normally the shared instances
   /// from [AppScope] — pass none to let this controller create (and own)
@@ -65,11 +66,13 @@ class EditorController extends ChangeNotifier {
     SecureConfigStorage? storage,
     ContextBuilderService? contextBuilder,
     Future<ChatMessage?> Function(int maxChars)? storyContext,
+    String? projectId,
   })  : _client = client ?? DynamicOpenAIClient(),
         _ownsClient = client == null,
         _storage = storage ?? SecureConfigStorage(),
         _contextBuilder = contextBuilder,
-        _storyContext = storyContext {
+        _storyContext = storyContext,
+        _projectId = projectId {
     textController.addListener(notifyListeners);
   }
 
@@ -164,7 +167,7 @@ class EditorController extends ChangeNotifier {
   Future<List<ChatMessage>> _withWorldContext(List<ChatMessage> messages, int maxChars) async {
     final contextMessages = [
       await _storyContext?.call(maxChars),
-      await _contextBuilder?.buildContextMessage(textController.text, maxChars: maxChars),
+      await _contextBuilder?.buildContextMessage(textController.text, maxChars: maxChars, projectId: _projectId),
     ].whereType<ChatMessage>().toList();
     if (contextMessages.isEmpty) return messages;
 

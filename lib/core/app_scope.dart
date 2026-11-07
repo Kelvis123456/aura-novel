@@ -6,6 +6,7 @@ import '../features/lore/context_builder_service.dart';
 import '../features/lore/lore_repository.dart';
 import '../features/projects/backup_service.dart';
 import '../features/projects/chapter_summary_service.dart';
+import '../features/projects/consistency_service.dart';
 import '../features/projects/project_repository.dart';
 
 /// App-wide dependency container. A single instance of each shared resource
@@ -25,6 +26,7 @@ class AppScope extends InheritedWidget {
   final ProjectRepository projectRepository;
   final ChapterSummaryService chapterSummaryService;
   final BackupService backupService;
+  final ConsistencyService consistencyService;
 
   const AppScope({
     super.key,
@@ -35,6 +37,7 @@ class AppScope extends InheritedWidget {
     required this.projectRepository,
     required this.chapterSummaryService,
     required this.backupService,
+    required this.consistencyService,
     required super.child,
   });
 

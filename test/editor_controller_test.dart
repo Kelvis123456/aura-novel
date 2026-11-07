@@ -35,6 +35,7 @@ class _RecordingContextBuilder extends ContextBuilderService {
     String fullText, {
     int scanWindowWords = 400,
     int maxChars = ContextBuilderService.defaultMaxContextChars,
+    String? projectId,
   }) async {
     requestedMaxChars = maxChars;
     return null;

@@ -44,7 +44,9 @@ class ProjectController extends ChangeNotifier {
   }
 
   Future<void> renameProject(ProjectModel project, {required String title, required String synopsis}) async {
-    await repository.saveProject(project.copyWith(title: title, synopsis: synopsis, updatedAt: DateTime.now()));
+    // The caller's copy can be stale (the calendar is edited from another screen).
+    final current = await repository.getProject(project.id) ?? project;
+    await repository.saveProject(current.copyWith(title: title, synopsis: synopsis, updatedAt: DateTime.now()));
     await loadProjects();
   }
 

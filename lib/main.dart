@@ -8,6 +8,7 @@ import 'features/lore/context_builder_service.dart';
 import 'features/lore/lore_repository.dart';
 import 'features/projects/backup_service.dart';
 import 'features/projects/chapter_summary_service.dart';
+import 'features/projects/consistency_service.dart';
 import 'features/projects/project_repository.dart';
 
 void main() {
@@ -33,6 +34,7 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
   late final ProjectRepository _projectRepository;
   late final ChapterSummaryService _chapterSummaryService;
   late final BackupService _backupService;
+  late final ConsistencyService _consistencyService;
 
   @override
   void initState() {
@@ -48,6 +50,13 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       storage: _configStorage,
     );
     _backupService = BackupService(projects: _projectRepository, lore: _loreRepository);
+    _consistencyService = ConsistencyService(
+      client: _apiClient,
+      repository: _projectRepository,
+      contextBuilder: _contextBuilder,
+      summaries: _chapterSummaryService,
+      storage: _configStorage,
+    );
   }
 
   @override
@@ -68,6 +77,7 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       projectRepository: _projectRepository,
       chapterSummaryService: _chapterSummaryService,
       backupService: _backupService,
+      consistencyService: _consistencyService,
       child: MaterialApp(
         title: 'AURA NOVEL',
         debugShowCheckedModeBanner: false,

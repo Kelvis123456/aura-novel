@@ -30,6 +30,12 @@ class LoreItemModel {
   /// When true, always injected regardless of whether a tag is mentioned.
   final bool forceInclude;
 
+  /// Chapter number (1-based) from which the public wiki shows this entry; 0 = always.
+  final int visibleFromChapter;
+
+  /// Project this entry belongs to; null = shared universe, visible in every project.
+  final String? projectId;
+
   const LoreItemModel({
     required this.id,
     required this.name,
@@ -38,7 +44,11 @@ class LoreItemModel {
     this.longDetails = '',
     this.tags = const [],
     this.forceInclude = false,
+    this.visibleFromChapter = 0,
+    this.projectId,
   });
+
+  bool appliesTo(String? currentProjectId) => projectId == null || projectId == currentProjectId;
 
   LoreItemModel copyWith({
     String? name,
@@ -47,6 +57,9 @@ class LoreItemModel {
     String? longDetails,
     List<String>? tags,
     bool? forceInclude,
+    int? visibleFromChapter,
+    String? projectId,
+    bool clearProject = false,
   }) {
     return LoreItemModel(
       id: id,
@@ -56,6 +69,8 @@ class LoreItemModel {
       longDetails: longDetails ?? this.longDetails,
       tags: tags ?? this.tags,
       forceInclude: forceInclude ?? this.forceInclude,
+      visibleFromChapter: visibleFromChapter ?? this.visibleFromChapter,
+      projectId: clearProject ? null : (projectId ?? this.projectId),
     );
   }
 
@@ -67,6 +82,8 @@ class LoreItemModel {
         'long_details': longDetails,
         'tags': jsonEncode(tags),
         'force_include': forceInclude ? 1 : 0,
+        'visible_from_chapter': visibleFromChapter,
+        'project_id': projectId,
       };
 
   factory LoreItemModel.fromMap(Map<String, dynamic> map) {
@@ -83,6 +100,8 @@ class LoreItemModel {
       longDetails: map['long_details'] as String? ?? '',
       tags: tags,
       forceInclude: (map['force_include'] as int? ?? 0) == 1,
+      visibleFromChapter: map['visible_from_chapter'] as int? ?? 0,
+      projectId: map['project_id'] as String?,
     );
   }
 }
