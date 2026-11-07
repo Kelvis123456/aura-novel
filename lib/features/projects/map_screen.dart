@@ -45,7 +45,7 @@ class _MapScreenState extends State<MapScreen> {
     final loreRepository = AppScope.of(context).loreRepository;
     final fresh = await _repo.getProject(_project.id);
     final pins = await _repo.getMapPins(_project.id);
-    final lore = await loreRepository.getAllLoreItems();
+    final lore = (await loreRepository.getAllLoreItems()).where((l) => l.appliesTo(_project.id)).toList();
     if (!mounted) return;
     setState(() {
       if (fresh != null) _project = fresh;

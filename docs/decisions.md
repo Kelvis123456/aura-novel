@@ -48,3 +48,6 @@ No hay editor de mapas. Se elige una imagen (de Azgaar, Inkarnate o un dibujo) y
 
 ## 2026-11-06: Restaurar una copia vieja pisa calendario y mapa
 La restauración reemplaza la fila del proyecto por id. Una copia hecha antes del calendario o del mapa no trae esas columnas y las deja vacías. Es la misma regla de "reemplaza por id" de la decisión anterior; no lo resolví aparte.
+
+## 2026-11-06: Las fichas de lore son por proyecto, con "universo compartido" opcional
+Antes personajes y lore eran globales: la IA, la revisión de coherencia, la wiki y el mapa veían todo. Con dos novelas se mezclaban y la wiki de una publicaba el mundo de la otra. Ahora cada ficha tiene un `project_id` opcional: con proyecto solo se ve en ese libro, sin proyecto (NULL) es del universo compartido y se ve en todos, para quien escribe varios libros en un mismo mundo. La migración (lore v3) deja todas las fichas existentes como compartidas, así que nada desaparece. El editor sin proyecto (borrador suelto) solo ve las compartidas. En el Studio se ve lo del proyecto desde el que se abrió más lo compartido, con un botón para ver todo. Alternativa: una base de lore por proyecto. La descarté porque obliga a duplicar fichas cuando el mundo es el mismo.

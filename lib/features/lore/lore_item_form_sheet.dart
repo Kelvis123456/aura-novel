@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'lore_repository.dart';
 import 'models/lore_item_model.dart';
+import '../projects/models/project_model.dart';
+import 'widgets/project_owner_field.dart';
 import 'widgets/tag_input_field.dart';
 import 'widgets/visible_from_field.dart';
 
@@ -10,13 +12,17 @@ import 'widgets/visible_from_field.dart';
 class LoreItemFormSheet extends StatefulWidget {
   final LoreItemModel? existing;
   final Color accent;
+  final List<ProjectModel> projects;
+  final String? defaultProjectId;
 
-  const LoreItemFormSheet({super.key, this.existing, required this.accent});
+  const LoreItemFormSheet({super.key, this.existing, required this.accent, this.projects = const [], this.defaultProjectId});
 
   static Future<LoreItemModel?> show(
     BuildContext context, {
     LoreItemModel? existing,
     required Color accent,
+    List<ProjectModel> projects = const [],
+    String? defaultProjectId,
   }) {
     return showModalBottomSheet<LoreItemModel>(
       context: context,
@@ -25,7 +31,7 @@ class LoreItemFormSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => LoreItemFormSheet(existing: existing, accent: accent),
+      builder: (_) => LoreItemFormSheet(existing: existing, accent: accent, projects: projects, defaultProjectId: defaultProjectId),
     );
   }
 
@@ -40,6 +46,7 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
   late LoreCategory _category;
   late List<String> _tags;
   late bool _forceInclude;
+  String? _projectId;
   late final TextEditingController _visibleFromField;
 
   String? _nameError;
@@ -56,6 +63,7 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
     _category = existing?.category ?? LoreCategory.location;
     _tags = List.of(existing?.tags ?? const []);
     _forceInclude = existing?.forceInclude ?? false;
+    _projectId = existing != null ? existing.projectId : widget.defaultProjectId;
     final visibleFrom = existing?.visibleFromChapter ?? 0;
     _visibleFromField = TextEditingController(text: visibleFrom == 0 ? '' : '$visibleFrom');
   }
@@ -85,6 +93,7 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
       tags: _tags,
       forceInclude: _forceInclude,
       visibleFromChapter: VisibleFromField.parse(_visibleFromField.text),
+      projectId: _projectId,
     );
 
     Navigator.of(context).pop(model);
@@ -154,6 +163,8 @@ class _LoreItemFormSheetState extends State<LoreItemFormSheet> {
                   hint: 'ej. taberna, capital',
                 ),
                 const SizedBox(height: 16),
+                ProjectOwnerField(projects: widget.projects, value: _projectId, onChanged: (v) => setState(() => _projectId = v)),
+                const SizedBox(height: 12),
                 VisibleFromField(controller: _visibleFromField),
                 const SizedBox(height: 12),
                 SwitchListTile(

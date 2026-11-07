@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'lore_repository.dart';
 import 'models/character_model.dart';
+import '../projects/models/project_model.dart';
+import 'widgets/project_owner_field.dart';
 import 'widgets/tag_input_field.dart';
 import 'widgets/visible_from_field.dart';
 
@@ -11,11 +13,17 @@ class CharacterFormSheet extends StatefulWidget {
   final CharacterModel? existing;
   final List<CharacterModel> otherCharacters;
   final Color accent;
+  final List<ProjectModel> projects;
+
+  /// Owner preselected for a new entry (the project the studio was opened from).
+  final String? defaultProjectId;
 
   const CharacterFormSheet({
     super.key,
     required this.otherCharacters,
     required this.accent,
+    this.projects = const [],
+    this.defaultProjectId,
     this.existing,
   });
 
@@ -24,6 +32,8 @@ class CharacterFormSheet extends StatefulWidget {
     CharacterModel? existing,
     required List<CharacterModel> otherCharacters,
     required Color accent,
+    List<ProjectModel> projects = const [],
+    String? defaultProjectId,
   }) {
     return showModalBottomSheet<CharacterModel>(
       context: context,
@@ -32,7 +42,13 @@ class CharacterFormSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => CharacterFormSheet(existing: existing, otherCharacters: otherCharacters, accent: accent),
+      builder: (_) => CharacterFormSheet(
+        existing: existing,
+        otherCharacters: otherCharacters,
+        accent: accent,
+        projects: projects,
+        defaultProjectId: defaultProjectId,
+      ),
     );
   }
 
@@ -50,6 +66,7 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
   late List<String> _personalityTraits;
   late List<CharacterRelationship> _relationships;
   late bool _forceInclude;
+  String? _projectId;
   late final TextEditingController _visibleFromField;
 
   String? _nameError;
@@ -68,6 +85,7 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
     _personalityTraits = List.of(existing?.personalityTraits ?? const []);
     _relationships = List.of(existing?.relationships ?? const []);
     _forceInclude = existing?.forceInclude ?? false;
+    _projectId = existing != null ? existing.projectId : widget.defaultProjectId;
     final visibleFrom = existing?.visibleFromChapter ?? 0;
     _visibleFromField = TextEditingController(text: visibleFrom == 0 ? '' : '$visibleFrom');
   }
@@ -109,6 +127,7 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
       relationships: _relationships.where((r) => r.description.trim().isNotEmpty).toList(),
       forceInclude: _forceInclude,
       visibleFromChapter: VisibleFromField.parse(_visibleFromField.text),
+      projectId: _projectId,
     );
 
     Navigator.of(context).pop(model);
@@ -182,6 +201,8 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
                   ],
                 ),
                 for (var i = 0; i < _relationships.length; i++) _relationshipRow(i, accent),
+                const SizedBox(height: 12),
+                ProjectOwnerField(projects: widget.projects, value: _projectId, onChanged: (v) => setState(() => _projectId = v)),
                 const SizedBox(height: 12),
                 VisibleFromField(controller: _visibleFromField),
                 const SizedBox(height: 12),

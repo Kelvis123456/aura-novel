@@ -6,6 +6,7 @@ import 'lore_item_form_sheet.dart';
 import 'lore_studio_controller.dart';
 import 'models/character_model.dart';
 import 'models/lore_item_model.dart';
+import '../projects/models/project_model.dart';
 
 /// Studio de Personajes y Lore: two tabs (Personajes / Lore y Mundo) backed
 /// by [LoreStudioController], each with search, dark-glassmorphism cards,
@@ -13,7 +14,10 @@ import 'models/lore_item_model.dart';
 class LoreStudioScreen extends StatefulWidget {
   final Color accentColor;
 
-  const LoreStudioScreen({super.key, this.accentColor = const Color(0xFFDC143C)});
+  /// Project the studio was opened from; null for the scratch editor.
+  final String? projectId;
+
+  const LoreStudioScreen({super.key, this.accentColor = const Color(0xFFDC143C), this.projectId});
 
   @override
   State<LoreStudioScreen> createState() => _LoreStudioScreenState();
@@ -23,12 +27,18 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
   late final LoreStudioController _controller;
   late final TabController _tabController;
   final _searchFieldController = TextEditingController();
+  List<ProjectModel> _projects = [];
 
   @override
   void initState() {
     super.initState();
     final scope = AppScope.of(context);
-    _controller = LoreStudioController(repository: scope.loreRepository)..addListener(_onControllerChanged);
+    _controller = LoreStudioController(repository: scope.loreRepository)
+      ..scopeProjectId = widget.projectId
+      ..addListener(_onControllerChanged);
+    scope.projectRepository.getAllProjects().then((projects) {
+      if (mounted) setState(() => _projects = projects);
+    });
     _tabController = TabController(length: 2, vsync: this);
     _controller.load();
   }
@@ -51,12 +61,20 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
       existing: existing,
       otherCharacters: others,
       accent: widget.accentColor,
+      projects: _projects,
+      defaultProjectId: widget.projectId,
     );
     if (result != null) await _controller.saveCharacter(result);
   }
 
   Future<void> _createOrEditLoreItem({LoreItemModel? existing}) async {
-    final result = await LoreItemFormSheet.show(context, existing: existing, accent: widget.accentColor);
+    final result = await LoreItemFormSheet.show(
+      context,
+      existing: existing,
+      accent: widget.accentColor,
+      projects: _projects,
+      defaultProjectId: widget.projectId,
+    );
     if (result != null) await _controller.saveLoreItem(result);
   }
 
@@ -95,6 +113,13 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text('Studio de Personajes y Lore'),
+        actions: [
+          IconButton(
+            icon: Icon(_controller.showAll ? Icons.filter_alt_off : Icons.filter_alt_outlined),
+            tooltip: _controller.showAll ? 'Ver solo este proyecto y el universo compartido' : 'Ver las fichas de todos los proyectos',
+            onPressed: () => _controller.setShowAll(!_controller.showAll),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: accent,

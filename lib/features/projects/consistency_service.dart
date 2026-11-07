@@ -45,7 +45,7 @@ class ConsistencyService {
 
     final clipped = ChapterSummaryService.clipMiddle(text, ChapterSummaryService.maxInputChars);
     // Scan the whole chapter for names, not just the last 400 words the editor uses.
-    final lore = await _contextBuilder.buildContextMessage(clipped, scanWindowWords: 100000, maxChars: config.contextChars);
+    final lore = await _contextBuilder.buildContextMessage(clipped, scanWindowWords: 100000, maxChars: config.contextChars, projectId: chapter.projectId);
     final prior = await _summaries.buildPriorSummariesMessage(chapter.projectId, chapter.id, maxChars: config.contextChars);
 
     final response = await _client.send(

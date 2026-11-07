@@ -23,11 +23,14 @@ class ContextBuilderService {
     String fullText, {
     int scanWindowWords = _defaultScanWindowWords,
     int maxChars = defaultMaxContextChars,
+    String? projectId,
   }) async {
     final window = _lastWords(fullText, scanWindowWords);
 
-    final characters = await _repository.getAllCharacters();
-    final loreItems = await _repository.getAllLoreItems();
+    final allCharacters = await _repository.getAllCharacters();
+    // Only this project's entries and the shared universe; a scratch editor (no project) sees shared only.
+    final characters = allCharacters.where((c) => c.appliesTo(projectId)).toList();
+    final loreItems = (await _repository.getAllLoreItems()).where((l) => l.appliesTo(projectId)).toList();
 
     final activeCharacters = characters
         .where((c) => c.forceInclude || _mentionsAny(window, [c.name, ...c.aliases]))

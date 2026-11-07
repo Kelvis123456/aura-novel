@@ -29,8 +29,8 @@ class WikiExportService {
     bool shown(int visibleFrom) => upToChapter == null || visibleFrom == 0 || visibleFrom <= upToChapter;
 
     final chapterNumber = {for (var i = 0; i < chapters.length; i++) chapters[i].id: i + 1};
-    final visibleCharacters = characters.where((c) => shown(c.visibleFromChapter)).toList();
-    final visibleLore = loreItems.where((l) => shown(l.visibleFromChapter)).toList();
+    final visibleCharacters = characters.where((c) => c.appliesTo(project.id) && shown(c.visibleFromChapter)).toList();
+    final visibleLore = loreItems.where((l) => l.appliesTo(project.id) && shown(l.visibleFromChapter)).toList();
     final visibleEvents = events.where((e) {
       if (upToChapter == null) return true;
       final number = chapterNumber[e.chapterId];

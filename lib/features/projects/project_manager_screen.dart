@@ -368,7 +368,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Incluye todos los personajes y entradas de lore de la app, no solo los de este proyecto.',
+                'Incluye los personajes y el lore de este proyecto y los del universo compartido.',
                 style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 12),
