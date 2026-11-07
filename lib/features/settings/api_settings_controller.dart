@@ -5,6 +5,7 @@ import '../../core/network/exceptions/api_exceptions.dart';
 import '../../core/network/models/chat_completion_request.dart';
 import '../../core/network/models/chat_message.dart';
 import '../../core/storage/secure_config_storage.dart';
+import '../../core/network/local_llm_client.dart';
 
 /// Result of the last "Probar Conexión" attempt, driving the status badge.
 enum ConnectionStatus {
@@ -52,12 +53,15 @@ class ApiSettingsFormErrors {
 class ApiSettingsController extends ChangeNotifier {
   final SecureConfigStorage _storage;
   final DynamicOpenAIClient _client;
+  final LocalLlmClient? _localClient;
 
   ApiSettingsController({
     SecureConfigStorage? storage,
     DynamicOpenAIClient? client,
+    LocalLlmClient? localClient,
   })  : _storage = storage ?? SecureConfigStorage(),
-        _client = client ?? DynamicOpenAIClient();
+        _client = client ?? DynamicOpenAIClient(),
+        _localClient = localClient;
 
   bool isLoading = true;
   bool isSaving = false;
@@ -72,6 +76,10 @@ class ApiSettingsController extends ChangeNotifier {
   double presencePenalty = 0.2;
   int contextChars = ApiEndpointConfig.defaultContextChars;
   String researchModelId = '';
+  String provider = 'remote';
+  String localModelId = '';
+
+  bool get isLocal => provider == 'local';
 
   ConnectionStatus status = ConnectionStatus.unconfigured;
   String? statusDetail;
@@ -92,6 +100,8 @@ class ApiSettingsController extends ChangeNotifier {
       presencePenalty = config.presencePenalty;
       contextChars = config.contextChars;
       researchModelId = config.researchModelId;
+      provider = config.provider;
+      localModelId = config.localModelId;
       status = ConnectionStatus.savedUntested;
     } else {
       // First run: pre-fill with Google's Gemini free tier (via its
@@ -125,6 +135,17 @@ class ApiSettingsController extends ChangeNotifier {
 
   void updateModelId(String value) {
     modelId = value;
+    notifyListeners();
+  }
+
+  void updateProvider(String value) {
+    provider = value;
+    formErrors = const ApiSettingsFormErrors.empty();
+    notifyListeners();
+  }
+
+  void updateLocalModel(String id) {
+    localModelId = id;
     notifyListeners();
   }
 
@@ -168,6 +189,11 @@ class ApiSettingsController extends ChangeNotifier {
   ApiSettingsFormErrors _validate() {
     final errors = <String, String>{};
 
+    if (isLocal) {
+      if (localModelId.isEmpty) errors['localModel'] = 'Descarga y elige un modelo.';
+      return ApiSettingsFormErrors(errors);
+    }
+
     final trimmedUrl = baseUrl.trim();
     final uri = Uri.tryParse(trimmedUrl);
     if (trimmedUrl.isEmpty) {
@@ -197,6 +223,8 @@ class ApiSettingsController extends ChangeNotifier {
         presencePenalty: presencePenalty,
         contextChars: contextChars,
         researchModelId: researchModelId.trim(),
+        provider: provider,
+        localModelId: localModelId,
       );
 
   /// Returns true on success. On failure, [formErrors] is populated and the
@@ -236,6 +264,19 @@ class ApiSettingsController extends ChangeNotifier {
     status = ConnectionStatus.testing;
     statusDetail = null;
     notifyListeners();
+
+    if (isLocal) {
+      try {
+        await _localClient!.selfTest(localModelId);
+        status = ConnectionStatus.connected;
+      } on ApiClientException catch (e) {
+        status = ConnectionStatus.serverError;
+        statusDetail = e.message;
+      } finally {
+        notifyListeners();
+      }
+      return;
+    }
 
     try {
       final response = await _client.send(

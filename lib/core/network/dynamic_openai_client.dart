@@ -8,12 +8,13 @@ import '../storage/secure_config_storage.dart';
 import 'exceptions/api_exceptions.dart';
 import 'models/chat_completion_request.dart';
 import 'models/chat_completion_response.dart';
+import 'llm_client.dart';
 
 /// Generic client for any server implementing the OpenAI Chat Completions
 /// spec (`POST {baseUrl}/chat/completions`). The endpoint, key and model are
 /// resolved at call time from [SecureConfigStorage], so switching providers
 /// only requires updating Settings — no code changes or app rebuild.
-class DynamicOpenAIClient {
+class DynamicOpenAIClient implements LlmClient {
   final SecureConfigStorage _configStorage;
   final http.Client _httpClient;
   final Duration timeout;
@@ -49,6 +50,7 @@ class DynamicOpenAIClient {
       };
 
   /// Single-shot completion — waits for the full response body.
+  @override
   Future<ChatCompletionResponse> send(ChatCompletionRequest request) async {
     final config = await _requireConfig();
     final body = jsonEncode(request.copyWith(stream: false).toJson());
@@ -74,6 +76,7 @@ class DynamicOpenAIClient {
   /// Streaming completion. Emits one [ChatCompletionChunk] per SSE `data:`
   /// event as it arrives, then completes the stream when the server sends
   /// `[DONE]`. Cancel by cancelling the returned stream's subscription.
+  @override
   Stream<ChatCompletionChunk> stream(ChatCompletionRequest request) async* {
     final config = await _requireConfig();
     final body = jsonEncode(request.copyWith(stream: true).toJson());
@@ -182,5 +185,6 @@ class DynamicOpenAIClient {
     return Duration(seconds: seconds.clamp(0, 10));
   }
 
+  @override
   void dispose() => _httpClient.close();
 }

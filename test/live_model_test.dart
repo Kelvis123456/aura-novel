@@ -37,8 +37,9 @@ void main() {
 
     final out = StringBuffer();
     await for (final e in writer.write(
-      instruction: 'Mara llega de noche al faro abandonado de la isla y descubre que alguien lo ha mantenido encendido. '
-          'Hay una taza de té todavía tibia en la mesa.',
+      instruction: Platform.environment['AURA_LIVE_PROMPT'] ??
+          'Mara llega de noche al faro abandonado de la isla y descubre que alguien lo ha mantenido encendido. '
+              'Hay una taza de té todavía tibia en la mesa.',
       targetWords: int.tryParse(Platform.environment['AURA_LIVE_WORDS'] ?? '') ?? 1800,
       profile: const WritingProfile(genre: 'terror gótico', tone: 'opresivo', register: WritingRegister.crudo, craftLevel: CraftLevel.esencial),
     )) {

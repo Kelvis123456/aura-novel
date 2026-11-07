@@ -120,7 +120,7 @@ class ExportService {
             ),
           ),
           build: (context) => [
-            pw.Text(chapter.title, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+            pw.Text(chapter.title, style: const pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 16),
             for (final paragraph in paragraphs)
               pw.Padding(
@@ -162,7 +162,7 @@ class ExportService {
 
     void addText(String path, String content, {bool compress = true}) {
       final bytes = utf8.encode(content);
-      archive.addFile(ArchiveFile(path, bytes.length, bytes)..compress = compress);
+      archive.addFile(ArchiveFile.bytes(path, bytes)..compression = compress ? CompressionType.deflate : CompressionType.none);
     }
 
     // The EPUB spec wants `mimetype` first and stored uncompressed.
@@ -232,7 +232,7 @@ $content
   </navMap>
 </ncx>''');
 
-    return ZipEncoder().encode(archive)!;
+    return ZipEncoder().encode(archive);
   }
 
   static String _escapeXml(String input) =>

@@ -114,10 +114,9 @@ class WikiExportService {
     final archive = Archive();
     files.forEach((name, content) {
       final bytes = utf8.encode(content);
-      archive.addFile(ArchiveFile(name, bytes.length, bytes));
+      archive.addFile(ArchiveFile.bytes(name, bytes));
     });
     final zip = ZipEncoder().encode(archive);
-    if (zip == null) throw StateError('No se pudo generar el zip de la wiki.');
     final dir = await getTemporaryDirectory();
     final file = File(p.join(dir.path, 'wiki_${_slug(projectTitle)}.zip'));
     await file.writeAsBytes(zip, flush: true);
