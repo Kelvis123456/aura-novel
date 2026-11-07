@@ -10,19 +10,21 @@ import 'package:share_plus/share_plus.dart';
 
 import 'models/project_model.dart';
 
-enum ExportFormat { txt, pdf, epub }
+enum ExportFormat { txt, pdf, epub, docx }
 
 extension ExportFormatLabel on ExportFormat {
   String get label => switch (this) {
         ExportFormat.txt => 'TXT (texto plano)',
         ExportFormat.pdf => 'PDF (maquetado)',
         ExportFormat.epub => 'EPUB (libro electrónico)',
+        ExportFormat.docx => 'DOCX (manuscrito para Word)',
       };
 
   String get extension => switch (this) {
         ExportFormat.txt => 'txt',
         ExportFormat.pdf => 'pdf',
         ExportFormat.epub => 'epub',
+        ExportFormat.docx => 'docx',
       };
 }
 
@@ -47,6 +49,8 @@ class ExportService {
         return _exportPdf(project, chapters, contentByChapterId, author);
       case ExportFormat.epub:
         return _exportEpub(project, chapters, contentByChapterId, author);
+      case ExportFormat.docx:
+        return _writeToTempFile('${_slug(project.title)}.docx', buildDocxBytes(project, chapters, contentByChapterId, author));
     }
   }
 
@@ -231,6 +235,72 @@ $content
     $navPoints
   </navMap>
 </ncx>''');
+
+    return ZipEncoder().encode(archive);
+  }
+
+  /// A manuscript-style .docx: Times New Roman 12, double spaced, indented paragraphs, a title
+  /// page and every chapter on a new page (what agents and publishers ask for).
+  static List<int> buildDocxBytes(
+    ProjectModel project,
+    List<ChapterModel> chapters,
+    Map<String, String> contentByChapterId,
+    String author,
+  ) {
+    String para(String text, {String style = '', bool pageBreakBefore = false}) {
+      final props = [
+        if (style.isNotEmpty) '<w:pStyle w:val="$style"/>',
+        if (pageBreakBefore) '<w:pageBreakBefore/>',
+      ].join();
+      return '<w:p>${props.isEmpty ? '' : '<w:pPr>$props</w:pPr>'}<w:r><w:t xml:space="preserve">${_escapeXml(text)}</w:t></w:r></w:p>';
+    }
+
+    final body = StringBuffer()
+      ..write(para(project.title, style: 'Title'))
+      ..write(para(author, style: 'Subtitle'));
+    for (final chapter in chapters) {
+      body.write(para(chapter.title, style: 'Heading1', pageBreakBefore: true));
+      final paragraphs = (contentByChapterId[chapter.id] ?? '').split(RegExp(r'\n\s*\n')).where((t) => t.trim().isNotEmpty);
+      for (final paragraph in paragraphs) {
+        body.write(para(paragraph.trim().replaceAll(RegExp(r'\s*\n\s*'), ' ')));
+      }
+    }
+
+    const ns = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+    final archive = Archive();
+    void add(String path, String content) => archive.addFile(ArchiveFile.bytes(path, utf8.encode(content)));
+
+    add('[Content_Types].xml', '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>''');
+    add('_rels/.rels', '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>''');
+    add('word/_rels/document.xml.rels', '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>''');
+    add('word/styles.xml', '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles $ns>
+  <w:docDefaults>
+    <w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:lang w:val="es-ES"/></w:rPr></w:rPrDefault>
+    <w:pPrDefault><w:pPr><w:spacing w:line="480" w:lineRule="auto"/><w:ind w:firstLine="720"/></w:pPr></w:pPrDefault>
+  </w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+  <w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:spacing w:before="4000" w:after="240" w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:rPr><w:b/><w:sz w:val="40"/></w:rPr></w:style>
+  <w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:basedOn w:val="Normal"/>
+    <w:pPr><w:spacing w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr><w:rPr><w:sz w:val="28"/></w:rPr></w:style>
+  <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/>
+    <w:pPr><w:keepNext/><w:spacing w:before="2400" w:after="480" w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/><w:jc w:val="center"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:style>
+</w:styles>''');
+    add('word/document.xml', '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document $ns><w:body>$body<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>''');
 
     return ZipEncoder().encode(archive);
   }
