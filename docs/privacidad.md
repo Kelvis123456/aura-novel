@@ -22,7 +22,7 @@ Aura Novel no tiene servidor ni cuentas. Todo lo que escribes se queda en tu tel
 La app no filtra lo que escribes. Lo que un modelo acepte o rechace lo decide el modelo y su proveedor. Si el servicio que conectes guarda tus peticiones, eso queda fuera del control de la app.
 
 ## Borrar tus datos
-Borrar un proyecto elimina sus capítulos, versiones, borradores, línea de tiempo, mapa y conversación. Sus fichas de Mundo no se borran solas: quedan en la base de lore y se quitan a mano desde Mundo, con el filtro de ver todos los proyectos. Desinstalar la app borra las bases y la clave guardada. Un modelo descargado ocupa espacio aparte y se quita desde Ajustes.
+Borrar un proyecto elimina sus capítulos, versiones, borradores, línea de tiempo, mapa y conversación. Sus fichas de personajes y lore se borran con él; las del universo compartido se quedan. Desinstalar la app borra las bases y la clave guardada. Un modelo descargado ocupa espacio aparte y se quita desde Ajustes.
 
 ## Qué no he comprobado
 Esto describe el código, no una auditoría. No he pasado la app por un análisis de tráfico de red en un teléfono real, y no es asesoramiento legal. Si la publicas en una tienda, esa tienda pedirá su propia declaración de datos y esta lista sirve de base.
