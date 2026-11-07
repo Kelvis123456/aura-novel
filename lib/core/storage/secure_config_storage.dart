@@ -16,6 +16,10 @@ class ApiEndpointConfig {
   /// Small models need it low; large-window ones can take much more.
   final int contextChars;
 
+  /// Model used for research notes. Empty means the writing model. A model with
+  /// web search (a Perplexity or OpenRouter online model) makes the notes better.
+  final String researchModelId;
+
   static const defaultContextChars = 3000;
 
   const ApiEndpointConfig({
@@ -23,10 +27,11 @@ class ApiEndpointConfig {
     required this.apiKey,
     required this.modelId,
     this.temperature = 0.9,
-    this.maxTokens = 800,
+    this.maxTokens = 4096,
     this.frequencyPenalty = 0.3,
     this.presencePenalty = 0.2,
     this.contextChars = defaultContextChars,
+    this.researchModelId = '',
   });
 
   bool get isComplete =>
@@ -41,6 +46,7 @@ class ApiEndpointConfig {
     double? frequencyPenalty,
     double? presencePenalty,
     int? contextChars,
+    String? researchModelId,
   }) {
     return ApiEndpointConfig(
       baseUrl: baseUrl ?? this.baseUrl,
@@ -51,6 +57,7 @@ class ApiEndpointConfig {
       frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
       presencePenalty: presencePenalty ?? this.presencePenalty,
       contextChars: contextChars ?? this.contextChars,
+      researchModelId: researchModelId ?? this.researchModelId,
     );
   }
 }
@@ -70,6 +77,7 @@ class SecureConfigStorage {
   static const _keyFrequencyPenalty = 'aura.api.frequency_penalty';
   static const _keyPresencePenalty = 'aura.api.presence_penalty';
   static const _keyContextChars = 'aura.api.context_chars';
+  static const _keyResearchModel = 'aura.api.research_model';
 
   final FlutterSecureStorage _storage;
 
@@ -90,6 +98,7 @@ class SecureConfigStorage {
       _storage.write(key: _keyFrequencyPenalty, value: config.frequencyPenalty.toString()),
       _storage.write(key: _keyPresencePenalty, value: config.presencePenalty.toString()),
       _storage.write(key: _keyContextChars, value: config.contextChars.toString()),
+      _storage.write(key: _keyResearchModel, value: config.researchModelId.trim()),
     ]);
   }
 
@@ -103,6 +112,7 @@ class SecureConfigStorage {
       _storage.read(key: _keyFrequencyPenalty),
       _storage.read(key: _keyPresencePenalty),
       _storage.read(key: _keyContextChars),
+      _storage.read(key: _keyResearchModel),
     ]);
 
     final baseUrl = values[0];
@@ -116,11 +126,12 @@ class SecureConfigStorage {
       apiKey: apiKey,
       modelId: modelId,
       temperature: double.tryParse(values[3] ?? '') ?? 0.9,
-      maxTokens: int.tryParse(values[4] ?? '') ?? 800,
+      maxTokens: int.tryParse(values[4] ?? '') ?? 4096,
       frequencyPenalty: double.tryParse(values[5] ?? '') ?? 0.3,
       presencePenalty: double.tryParse(values[6] ?? '') ?? 0.2,
       // Installs that saved their config before this setting existed have no value.
       contextChars: int.tryParse(values[7] ?? '') ?? ApiEndpointConfig.defaultContextChars,
+      researchModelId: values[8] ?? '',
     );
   }
 
@@ -134,6 +145,7 @@ class SecureConfigStorage {
       _storage.delete(key: _keyFrequencyPenalty),
       _storage.delete(key: _keyPresencePenalty),
       _storage.delete(key: _keyContextChars),
+      _storage.delete(key: _keyResearchModel),
     ]);
   }
 }

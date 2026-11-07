@@ -67,7 +67,7 @@ class ApiSettingsController extends ChangeNotifier {
   String apiKey = '';
   String modelId = '';
   double temperature = 0.9;
-  int maxTokens = 800;
+  int maxTokens = 4096;
   double frequencyPenalty = 0.3;
   double presencePenalty = 0.2;
   int contextChars = ApiEndpointConfig.defaultContextChars;
