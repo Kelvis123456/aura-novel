@@ -62,6 +62,17 @@ void main() {
       expect(loaded.calendar!.months.first.name, 'Brumario');
     });
 
+    test('guardar calendario y mapa por separado no se pisan', () async {
+      await repo.saveProject(ProjectModel(id: 'p', title: 'T', createdAt: DateTime(2026), updatedAt: DateTime(2026)));
+
+      await repo.setProjectCalendar('p', calendar);
+      await repo.setProjectMapPath('p', '/maps/a.png');
+
+      final loaded = (await repo.getProject('p'))!;
+      expect(loaded.calendar!.eraName, 'Era del Sol');
+      expect(loaded.mapPath, '/maps/a.png');
+    });
+
     test('renombrar con una copia vieja del proyecto no borra el calendario', () async {
       final stale = ProjectModel(id: 'p', title: 'T', createdAt: DateTime(2026), updatedAt: DateTime(2026));
       await repo.saveProject(stale.copyWith(calendar: calendar));

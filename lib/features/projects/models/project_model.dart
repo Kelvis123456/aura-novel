@@ -11,7 +11,7 @@ class ProjectModel {
   /// The world's own calendar, if the author defined one.
   final FantasyCalendar? calendar;
 
-  /// Local path of the map image, empty when none. Not part of the JSON backup.
+  /// Local path of the map image, empty when none. The path travels in the JSON backup but the image file does not.
   final String mapPath;
 
   const ProjectModel({

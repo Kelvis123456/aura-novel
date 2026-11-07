@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import 'models/project_model.dart';
+import 'models/fantasy_calendar_model.dart';
 import 'models/map_pin_model.dart';
 import 'models/story_node_model.dart';
 import 'models/timeline_event_model.dart';
@@ -218,6 +219,20 @@ class ProjectRepository {
       limit: 1,
     );
     return rows.isEmpty ? null : StoryNodeModel.fromMap(rows.first);
+  }
+
+  // Single-column writes: saving a whole ProjectModel from a screen that holds
+  // an older copy would overwrite what another screen just saved.
+  Future<void> setProjectCalendar(String projectId, FantasyCalendar calendar) async {
+    final db = await _database;
+    await db.update('projects', {'calendar': calendar.toJsonString(), 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?', whereArgs: [projectId]);
+  }
+
+  Future<void> setProjectMapPath(String projectId, String path) async {
+    final db = await _database;
+    await db.update('projects', {'map_path': path, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?', whereArgs: [projectId]);
   }
 
   // ---- Timeline -----------------------------------------------------------

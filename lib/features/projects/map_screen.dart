@@ -43,10 +43,12 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _load() async {
     final loreRepository = AppScope.of(context).loreRepository;
+    final fresh = await _repo.getProject(_project.id);
     final pins = await _repo.getMapPins(_project.id);
     final lore = await loreRepository.getAllLoreItems();
     if (!mounted) return;
     setState(() {
+      if (fresh != null) _project = fresh;
       _pins = pins;
       _lore = lore;
     });
@@ -59,6 +61,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _pickImage() async {
+    final repo = _repo;
     final picked = await FilePicker.platform.pickFiles(type: FileType.image);
     final source = picked?.files.single.path;
     if (source == null) return;
@@ -70,16 +73,17 @@ class _MapScreenState extends State<MapScreen> {
     await File(source).copy(target);
 
     final old = _project.mapPath;
-    final updated = _project.copyWith(mapPath: target, updatedAt: DateTime.now());
-    await _repo.saveProject(updated);
-    if (old.isNotEmpty && old != target) {
+    await repo.setProjectMapPath(_project.id, target);
+    final updated = await repo.getProject(_project.id);
+    // Only delete files this screen put in maps/: a restored backup can carry any path.
+    if (old.isNotEmpty && old != target && p.isWithin(dir.path, old)) {
       try {
         File(old).deleteSync();
       } on FileSystemException {
         // Already gone: nothing to clean.
       }
     }
-    if (mounted) setState(() => _project = updated);
+    if (mounted && updated != null) setState(() => _project = updated);
   }
 
   Future<void> _addPin(Offset fraction) async {
@@ -128,13 +132,15 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
     );
-    if (saved != true || label.text.trim().isEmpty) return;
+    final text = label.text.trim();
+    label.dispose();
+    if (saved != true || text.isEmpty) return;
     await _repo.saveMapPin(MapPin(
       id: ProjectRepository.generateId(),
       projectId: _project.id,
       x: fraction.dx.clamp(0.0, 1.0),
       y: fraction.dy.clamp(0.0, 1.0),
-      label: label.text.trim(),
+      label: text,
       loreItemId: loreId,
     ));
     await _load();

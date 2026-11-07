@@ -35,9 +35,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Future<void> _load() async {
-    final events = await _repo.getTimelineEvents(widget.project.id);
+    final repo = _repo;
+    final events = await repo.getTimelineEvents(widget.project.id);
+    // The chapter list holds an older copy of the project than the DB.
+    final fresh = await repo.getProject(widget.project.id);
     if (!mounted) return;
     setState(() {
+      if (fresh != null) _project = fresh;
       _events = events;
       _loading = false;
     });
@@ -55,15 +59,21 @@ class _TimelineScreenState extends State<TimelineScreen> {
       MaterialPageRoute(builder: (_) => CalendarEditorScreen(initial: _project.calendar, accent: widget.accent)),
     );
     if (calendar == null) return;
-    final updated = _project.copyWith(calendar: calendar, updatedAt: DateTime.now());
-    await _repo.saveProject(updated);
-    if (mounted) setState(() => _project = updated);
+    final repo = _repo;
+    await repo.setProjectCalendar(_project.id, calendar);
+    final fresh = await repo.getProject(_project.id);
+    if (mounted && fresh != null) setState(() => _project = fresh);
   }
+
+  int _nextPosition() => _events.isEmpty ? 0 : _events.map((e) => e.position).reduce((a, b) => a > b ? a : b) + 1;
 
   Future<void> _reorder(int oldIndex, int newIndex) async {
     final moved = List.of(_events);
     moved.insert(newIndex, moved.removeAt(oldIndex));
-    setState(() => _events = moved);
+    // Keep the in-memory positions in step with the DB, or editing an event
+    // afterwards would write its old position back.
+    final renumbered = [for (var i = 0; i < moved.length; i++) moved[i].copyWith(position: i)];
+    setState(() => _events = renumbered);
     await _repo.reorderTimeline([for (final e in moved) e.id]);
   }
 
@@ -160,9 +170,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
             FilledButton(
               onPressed: () {
                 if (calendar != null && year.text.trim().isNotEmpty) {
+                  final yearValue = int.tryParse(year.text.trim());
+                  if (yearValue == null) {
+                    setDialogState(() => dateError = 'El año no es un número válido.');
+                    return;
+                  }
                   try {
                     date.text = calendar.format(
-                      year: int.parse(year.text.trim()),
+                      year: yearValue,
                       monthIndex: monthIndex,
                       day: int.tryParse(day.text.trim()) ?? 0,
                     );
@@ -181,17 +196,22 @@ class _TimelineScreenState extends State<TimelineScreen> {
       ),
     );
 
+    final values = (title: title.text.trim(), date: date.text.trim(), description: description.text.trim());
+    for (final c in [title, date, description, year, day]) {
+      c.dispose();
+    }
+
     if (action == 'delete' && existing != null) {
       await _repo.deleteTimelineEvent(existing.id);
-    } else if (action == 'save' && title.text.trim().isNotEmpty) {
+    } else if (action == 'save' && values.title.isNotEmpty) {
       await _repo.saveTimelineEvent(TimelineEvent(
         id: existing?.id ?? ProjectRepository.generateId(),
         projectId: widget.project.id,
         chapterId: chapterId,
-        title: title.text.trim(),
-        worldDate: date.text.trim(),
-        description: description.text.trim(),
-        position: existing?.position ?? _events.length,
+        title: values.title,
+        worldDate: values.date,
+        description: values.description,
+        position: existing?.position ?? _nextPosition(),
       ));
     } else {
       return;

@@ -45,8 +45,8 @@ class ConsistencyService {
 
     final clipped = ChapterSummaryService.clipMiddle(text, ChapterSummaryService.maxInputChars);
     // Scan the whole chapter for names, not just the last 400 words the editor uses.
-    final lore = await _contextBuilder.buildContextMessage(clipped, scanWindowWords: 100000);
-    final prior = await _summaries.buildPriorSummariesMessage(chapter.projectId, chapter.id);
+    final lore = await _contextBuilder.buildContextMessage(clipped, scanWindowWords: 100000, maxChars: config.contextChars);
+    final prior = await _summaries.buildPriorSummariesMessage(chapter.projectId, chapter.id, maxChars: config.contextChars);
 
     final response = await _client.send(
       ChatCompletionRequest(
@@ -73,7 +73,7 @@ class ConsistencyService {
 
   static List<String> parseIssues(String raw) {
     final trimmed = raw.trim();
-    if (trimmed.isEmpty || trimmed.contains(noIssuesMarker)) return const [];
+    if (trimmed.isEmpty) return const [];
     final bullets = trimmed
         .split('\n')
         .map((l) => l.trim())
@@ -81,7 +81,10 @@ class ConsistencyService {
         .map((l) => l.substring(2).trim())
         .where((l) => l.isNotEmpty)
         .toList();
+    if (bullets.isNotEmpty) return bullets;
+    // The marker only means "nothing found" when no contradiction was listed.
+    if (trimmed.contains(noIssuesMarker)) return const [];
     // A model that ignored the bullet format still said something: keep it whole.
-    return bullets.isEmpty ? [trimmed] : bullets;
+    return [trimmed];
   }
 }

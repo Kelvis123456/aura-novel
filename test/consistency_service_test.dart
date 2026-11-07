@@ -37,6 +37,10 @@ void main() {
           ['Mara tiene 30', 'Torre al norte']);
     });
 
+    test('viñetas con el marcador al final no se descartan', () {
+      expect(ConsistencyService.parseIssues('- Mara tiene 30\nFuera de eso, SIN_CONTRADICCIONES'), ['Mara tiene 30']);
+    });
+
     test('si no hay viñetas conserva la respuesta entera', () {
       expect(ConsistencyService.parseIssues('Mara cambió de edad.'), ['Mara cambió de edad.']);
     });
