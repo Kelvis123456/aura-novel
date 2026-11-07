@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/aura_theme.dart';
 
 class PrimaryActionButton extends StatelessWidget {
   final bool isGenerating;
@@ -15,7 +16,7 @@ class PrimaryActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isGenerating ? Colors.white.withValues(alpha: 0.12) : accent,
+      color: isGenerating ? context.aura.line : accent,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -24,7 +25,7 @@ class PrimaryActionButton extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Icon(
             isGenerating ? Icons.stop_rounded : Icons.arrow_upward_rounded,
-            color: Colors.white,
+            color: context.aura.onAccent,
             size: 20,
           ),
         ),

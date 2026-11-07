@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/app_scope.dart';
+import 'core/theme/aura_theme.dart';
+import 'core/widgets/app_shell.dart';
 import 'core/network/dynamic_openai_client.dart';
 import 'core/storage/secure_config_storage.dart';
-import 'features/editor/editor_screen.dart';
 import 'features/lore/context_builder_service.dart';
 import 'features/lore/lore_repository.dart';
 import 'features/projects/backup_service.dart';
@@ -81,10 +83,22 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       child: MaterialApp(
         title: 'AURA NOVEL',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark(useMaterial3: true).copyWith(
-          scaffoldBackgroundColor: const Color(0xFF000000),
-        ),
-        home: const EditorScreen(),
+        theme: AuraTheme.light,
+        darkTheme: AuraTheme.dark,
+        themeMode: ThemeMode.system,
+        builder: (context, child) {
+          final dark = Theme.of(context).brightness == Brightness.dark;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+              systemNavigationBarColor: context.aura.bg,
+              systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+            ),
+            child: child!,
+          );
+        },
+        home: const AppShell(),
       ),
     );
   }

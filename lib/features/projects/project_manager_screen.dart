@@ -17,16 +17,19 @@ import 'project_cards.dart';
 import 'project_controller.dart';
 import 'timeline_screen.dart';
 import 'wiki_export_service.dart';
+import '../../core/theme/aura_theme.dart';
+import '../../core/widgets/aura_mark.dart';
+import '../../core/widgets/skeleton.dart';
 
 /// Entry point for project management: list projects → drill into a
 /// project's chapters → drill into a chapter's branching history
 /// ([BranchTreeViewer]), from where any version can be opened in
 /// [EditorScreen] or forked into a new named branch.
 class ProjectManagerScreen extends StatefulWidget {
-  final Color accentColor;
+  final Color? accentColor;
 
   const ProjectManagerScreen(
-      {super.key, this.accentColor = const Color(0xFFDC143C)});
+      {super.key, this.accentColor,});
 
   @override
   State<ProjectManagerScreen> createState() => _ProjectManagerScreenState();
@@ -102,33 +105,33 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
   Future<(String, String)?> _showProjectDialog() async {
     final titleController = TextEditingController();
     final synopsisController = TextEditingController();
-    final accent = widget.accentColor;
+    final accent = (widget.accentColor ?? context.aura.accent);
 
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
+        backgroundColor: context.aura.surface,
         title:
-            const Text('Nuevo proyecto', style: TextStyle(color: Colors.white)),
+            Text('Nuevo proyecto', style: TextStyle(color: context.aura.text)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleController,
               autofocus: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              style: TextStyle(color: context.aura.text),
+              decoration: InputDecoration(
                   labelText: 'Título',
-                  labelStyle: TextStyle(color: Colors.white54)),
+                  labelStyle: TextStyle(color: context.aura.textDim)),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: synopsisController,
               maxLines: 3,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              style: TextStyle(color: context.aura.text),
+              decoration: InputDecoration(
                   labelText: 'Sinopsis',
-                  labelStyle: TextStyle(color: Colors.white54)),
+                  labelStyle: TextStyle(color: context.aura.textDim)),
             ),
           ],
         ),
@@ -136,7 +139,7 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -155,23 +158,23 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
+        backgroundColor: context.aura.surface,
         title: Text('¿Eliminar "${project.title}"?',
-            style: const TextStyle(color: Colors.white, fontSize: 16)),
-        content: const Text(
+            style: TextStyle(color: context.aura.text, fontSize: 16)),
+        content: Text(
           'Se eliminarán también todos sus capítulos y versiones guardadas. Esta acción no se puede deshacer.',
-          style: TextStyle(color: Colors.white60),
+          style: TextStyle(color: context.aura.textDim),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Eliminar',
-                style: TextStyle(color: Colors.redAccent)),
+            child: Text('Eliminar',
+                style: TextStyle(color: context.aura.danger)),
           ),
         ],
       ),
@@ -181,10 +184,10 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.accentColor;
+    final accent = (widget.accentColor ?? context.aura.accent);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -193,7 +196,7 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: 'Copia de seguridad',
-            color: const Color(0xFF1A0B12),
+            color: context.aura.surface,
             onSelected: (value) =>
                 value == 'export' ? _exportBackup() : _restoreBackup(),
             itemBuilder: (_) => const [
@@ -207,23 +210,32 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
-          ),
+        decoration: BoxDecoration(
+          color: context.aura.bg,
         ),
         child: _controller.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonList()
             : _controller.projects.isEmpty
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        'Aún no hay proyectos. Pulsa "+" para crear el primero.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const AuraMark(size: 72),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Tu primera novela empieza aquí',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontFamily: AuraFonts.manuscript, fontSize: 24, color: context.aura.text),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Crea un proyecto con "+", añade capítulos y escribe con la IA que prefieras.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.aura.textDim, fontSize: 14),
+                          ),
+                        ],
                       ),
                     ),
                   )
@@ -296,22 +308,22 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
+        backgroundColor: context.aura.surface,
         title:
-            const Text('Nuevo capítulo', style: TextStyle(color: Colors.white)),
+            Text('Nuevo capítulo', style: TextStyle(color: context.aura.text)),
         content: TextField(
           controller: titleController,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.aura.text),
+          decoration: InputDecoration(
               labelText: 'Título',
-              labelStyle: TextStyle(color: Colors.white54)),
+              labelStyle: TextStyle(color: context.aura.textDim)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -361,21 +373,21 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A0B12),
-          title: const Text('Exportar wiki',
-              style: TextStyle(color: Colors.white, fontSize: 16)),
+          backgroundColor: context.aura.surface,
+          title: Text('Exportar wiki',
+              style: TextStyle(color: context.aura.text, fontSize: 16)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Incluye los personajes y el lore de este proyecto y los del universo compartido.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: context.aura.textDim, fontSize: 12),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<int?>(
                 initialValue: upTo,
                 isExpanded: true,
-                dropdownColor: const Color(0xFF1A0B12),
+                dropdownColor: context.aura.surface,
                 decoration: const InputDecoration(labelText: 'Mostrar hasta'),
                 items: [
                   const DropdownMenuItem<int?>(
@@ -393,8 +405,8 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white54)),
+              child: Text('Cancelar',
+                  style: TextStyle(color: context.aura.textDim)),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -453,22 +465,22 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
+        backgroundColor: context.aura.surface,
         title: Text('Coherencia: ${chapter.title}',
-            style: const TextStyle(color: Colors.white, fontSize: 16)),
+            style: TextStyle(color: context.aura.text, fontSize: 16)),
         content: SingleChildScrollView(
           child: Text(
             found.isEmpty
                 ? 'No encontré contradicciones con tus fichas ni con los capítulos anteriores.'
                 : found.map((i) => '• $i').join('\n\n'),
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: context.aura.textDim),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             child:
-                const Text('Cerrar', style: TextStyle(color: Colors.white54)),
+                Text('Cerrar', style: TextStyle(color: context.aura.textDim)),
           ),
         ],
       ),
@@ -479,22 +491,22 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
+        backgroundColor: context.aura.surface,
         title: Text('¿Eliminar "${chapter.title}"?',
-            style: const TextStyle(color: Colors.white, fontSize: 16)),
-        content: const Text(
+            style: TextStyle(color: context.aura.text, fontSize: 16)),
+        content: Text(
             'Se eliminarán también todas sus versiones guardadas.',
-            style: TextStyle(color: Colors.white60)),
+            style: TextStyle(color: context.aura.textDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Eliminar',
-                style: TextStyle(color: Colors.redAccent)),
+            child: Text('Eliminar',
+                style: TextStyle(color: context.aura.danger)),
           ),
         ],
       ),
@@ -510,7 +522,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     final accent = widget.accent;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -558,23 +570,19 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
-          ),
+        decoration: BoxDecoration(
+          color: context.aura.bg,
         ),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonList()
             : _chapters.isEmpty
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
                         'Aún no hay capítulos. Pulsa "+" para crear el primero.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
+                        style: TextStyle(color: context.aura.textFaint, fontSize: 13),
                       ),
                     ),
                   )
@@ -678,7 +686,7 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
   Future<void> _handleSelectNode(StoryNodeModel node) async {
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: const Color(0xFF0D0508),
+      backgroundColor: context.aura.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetContext) => SafeArea(
@@ -687,14 +695,14 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
           children: [
             ListTile(
               leading: Icon(Icons.edit_outlined, color: widget.accent),
-              title: const Text('Abrir en el editor',
-                  style: TextStyle(color: Colors.white)),
+              title: Text('Abrir en el editor',
+                  style: TextStyle(color: context.aura.text)),
               onTap: () => Navigator.of(sheetContext).pop('open'),
             ),
             ListTile(
               leading: Icon(Icons.call_split, color: widget.accent),
-              title: const Text('Crear rama desde aquí',
-                  style: TextStyle(color: Colors.white)),
+              title: Text('Crear rama desde aquí',
+                  style: TextStyle(color: context.aura.text)),
               onTap: () => Navigator.of(sheetContext).pop('branch'),
             ),
           ],
@@ -716,24 +724,24 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
-        title: const Text('Nueva rama', style: TextStyle(color: Colors.white)),
+        backgroundColor: context.aura.surface,
+        title: Text('Nueva rama', style: TextStyle(color: context.aura.text)),
         content: TextField(
           controller: nameController,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.aura.text),
+          decoration: InputDecoration(
             labelText: 'Nombre de la rama',
             hintText: 'ej. Ruta A: Aceptar la propuesta',
-            labelStyle: TextStyle(color: Colors.white54),
-            hintStyle: TextStyle(color: Colors.white38),
+            labelStyle: TextStyle(color: context.aura.textDim),
+            hintStyle: TextStyle(color: context.aura.textFaint),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -757,22 +765,18 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
     final accent = widget.accent;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(widget.chapter.title, overflow: TextOverflow.ellipsis),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [Color(0xFF1A0B12), Color(0xFF000000)],
-          ),
+        decoration: BoxDecoration(
+          color: context.aura.bg,
         ),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonList()
             : BranchTreeViewer(
                 nodes: _nodes,
                 selectedNodeId: _selectedNodeId,

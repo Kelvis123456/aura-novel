@@ -1,0 +1,284 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Identidad Aura Novel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+/* Layout: hoja de marca en una columna ancha; el logo abre, los ejemplos de pantalla cierran.
+   Tokens de la página (siguen el tema del visor); los --m-* son la marca misma y no cambian. */
+:root {
+  --bg: #F6F3EC;
+  --surface: #EDE9E1;
+  --text: #1F1915;
+  --text-2: #5A544D;
+  --line: #D9D3C8;
+  --accent: #A83630;
+  --display: "Newsreader", Georgia, serif;
+  --ui: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+
+  --m-ink0: #110C09; --m-ink1: #1A1511; --m-ink2: #26201C; --m-line: #38322D;
+  --m-bone: #EFEBE2; --m-bone2: #A9A49B; --m-lacre: #D86258; --m-lacre-hi: #EF7F74;
+  --m-paper0: #F6F3EC; --m-paper1: #EDE9E1; --m-pink: #1F1915; --m-pdim: #5A544D; --m-lacre-p: #A83630;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #110C09; --surface: #1A1511; --text: #EFEBE2; --text-2: #A9A49B; --line: #38322D; --accent: #EF7F74;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #110C09; --surface: #1A1511; --text: #EFEBE2; --text-2: #A9A49B; --line: #38322D; --accent: #EF7F74;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 400 15px/1.6 var(--ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+main { max-width: 1040px; margin: 0 auto; display: grid; gap: 72px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(40px, 7vw, 72px); line-height: 1.02; letter-spacing: -0.02em; }
+h2 { font-size: 30px; line-height: 1.15; }
+h3 { font: 600 12px/1.2 var(--ui); letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-2); }
+p { margin: 0; max-width: 62ch; }
+.muted { color: var(--text-2); }
+.num { font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 24px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 40px; align-items: center; }
+.hero svg { width: 100%; height: auto; display: block; border-radius: 22%; }
+.sizes { display: flex; align-items: end; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
+.sizes figure { margin: 0; display: grid; gap: 6px; justify-items: start; }
+.sizes figcaption { font-size: 12px; color: var(--text-2); }
+.sizes svg { border-radius: 22%; display: block; }
+
+/* paleta */
+.ramp { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.sw { padding: 14px 14px 12px; display: grid; gap: 2px; min-height: 118px; align-content: end; font-size: 12px; }
+.sw b { font: 600 13px/1.3 var(--ui); }
+.sw code { font: 400 12px/1.4 ui-monospace, "Cascadia Mono", monospace; opacity: 0.85; }
+.pairs { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pairs th, .pairs td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+.pairs th { font: 600 11px/1.2 var(--ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); }
+.pairs .fail { color: var(--accent); font-weight: 600; }
+.scroll { overflow-x: auto; }
+
+/* tipo */
+.type { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.spec { background: var(--surface); padding: 28px; border-radius: 6px; display: grid; gap: 14px; align-content: start; }
+.manuscript { font-family: var(--display); font-size: 21px; line-height: 1.7; }
+.ui-sample { display: grid; gap: 10px; }
+.ui-sample .t1 { font-weight: 600; font-size: 17px; }
+.ui-sample .t2 { font-size: 14px; color: var(--text-2); }
+
+/* pantallas */
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 300px)); gap: 28px; justify-content: center; }
+.phone { aspect-ratio: 9 / 18; border-radius: 34px; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--line); overflow: hidden; }
+.phone.tinta { background: var(--m-ink0); color: var(--m-bone); }
+.phone.papel { background: var(--m-paper0); color: var(--m-pink); }
+.p-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.7; }
+.tinta .p-meta { color: var(--m-bone2); } .papel .p-meta { color: var(--m-pdim); }
+.p-h { font-family: var(--display); font-size: 26px; line-height: 1.1; }
+.p-label { font: 600 10px/1 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; }
+.card { border-radius: 14px; padding: 14px; display: grid; gap: 6px; }
+.tinta .card { background: var(--m-ink1); border: 1px solid var(--m-line); }
+.papel .card { background: var(--m-paper1); }
+.card .c-title { font-family: var(--display); font-size: 18px; }
+.bar { height: 4px; border-radius: 2px; background: rgba(128,128,128,.28); overflow: hidden; }
+.bar i { display: block; height: 100%; }
+.tinta .bar i { background: var(--m-lacre); } .papel .bar i { background: var(--m-lacre-p); }
+.btn { border-radius: 999px; padding: 11px 16px; font: 600 13px/1 var(--ui); text-align: center; }
+.tinta .btn { background: var(--m-lacre); color: var(--m-ink0); }
+.papel .btn { background: var(--m-lacre-p); color: var(--m-paper0); }
+.tabs { margin-top: auto; display: flex; justify-content: space-around; padding-top: 10px; font-size: 11px; border-top: 1px solid rgba(128,128,128,.25); }
+.tabs span { padding: 4px 8px; opacity: .55; }
+.tinta .tabs .on { opacity: 1; color: var(--m-lacre-hi); } .papel .tabs .on { opacity: 1; color: var(--m-lacre-p); font-weight: 600; }
+.page-text { font-family: var(--display); font-size: 17px; line-height: 1.65; }
+.ai { border-bottom: 1px solid currentColor; }
+.tinta .ai { color: var(--m-lacre-hi); } .papel .ai { color: var(--m-lacre-p); }
+
+/* movimiento */
+.motion { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; align-items: start; }
+.stream-box { background: var(--m-ink0); color: var(--m-bone); border-radius: 6px; padding: 26px; min-height: 190px; font-family: var(--display); font-size: 20px; line-height: 1.7; }
+.stream-box .w { opacity: 0; transition: opacity 260ms cubic-bezier(.2,.7,.2,1); }
+.stream-box .w.in { opacity: 1; }
+.stream-box .w.new { color: var(--m-lacre-hi); }
+button.replay { margin-top: 14px; font: 600 13px/1 var(--ui); padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+button.replay:hover { background: var(--surface); }
+dl { margin: 0; display: grid; gap: 14px; }
+dt { font-weight: 600; }
+dd { margin: 2px 0 0; color: var(--text-2); font-size: 14px; }
+@media (max-width: 680px) { .hero { grid-template-columns: 1fr; } .hero svg { max-width: 220px; } }
+@media (prefers-reduced-motion: reduce) { .stream-box .w { transition: none; opacity: 1; } }
+</style>
+
+<main>
+  <header class="hero">
+    <div style="display:grid;gap:22px">
+      <h3>Hoja de identidad · noviembre 2026</h3>
+      <h1>Aura Novel, a tinta y papel</h1>
+      <p class="muted">La app se escribe de noche y de día, así que tiene dos páginas: una oscura y cálida, la tinta, y una clara, el papel. Un solo acento, el lacre rojo de los sellos, y una pluma sobre un libro abierto, con un aro de luz detrás: escribir una novela, con la aura asomando.</p>
+      <div class="sizes" aria-label="El icono en tamaños pequeños">
+        <figure><svg width="64" height="64" viewBox="0 0 512 512" aria-hidden="true"><use href="#aura"/></svg><figcaption class="num">64 px</figcaption></figure>
+        <figure><svg width="48" height="48" viewBox="0 0 512 512" aria-hidden="true"><use href="#aura"/></svg><figcaption class="num">48 px</figcaption></figure>
+        <figure><svg width="32" height="32" viewBox="0 0 512 512" aria-hidden="true"><use href="#aura"/></svg><figcaption class="num">32 px</figcaption></figure>
+        <figure><svg width="24" height="24" viewBox="0 0 512 512" aria-hidden="true"><use href="#aura"/></svg><figcaption class="num">24 px</figcaption></figure>
+      </div>
+    </div>
+    <svg viewBox="0 0 512 512" role="img" aria-label="Logo de Aura Novel: una punta de pluma sobre un libro abierto, con un aro rojo que sale detrás como un amanecer">
+      <defs>
+        <g id="aura">
+          <rect width="512" height="512" rx="112" fill="#110C09"/>
+          <circle cx="256" cy="244" r="178" fill="none" stroke="#D86258" stroke-width="26"/>
+          <path fill="#EFEBE2" d="M256 104 L328 300 Q256 276 184 300 Z"/>
+          <circle cx="256" cy="214" r="18" fill="#110C09"/>
+          <path fill="#110C09" d="M248 214 L264 214 L261 280 L251 280 Z"/>
+          <path fill="#110C09" d="M64 360 Q160 330 256 372 Q352 330 448 360 L448 448 L64 448 Z"/>
+          <path fill="#EFEBE2" d="M92 372 Q168 350 256 388 Q344 350 420 372 L420 424 Q344 402 256 438 Q168 402 92 424 Z"/>
+        </g>
+      </defs>
+      <use href="#aura"/>
+    </svg>
+  </header>
+
+  <section>
+    <h2>Dos páginas, un acento</h2>
+    <p class="muted">Los grises llevan un tinte cálido (matiz 60 a 85 en OKLCH) para que no parezcan de fábrica. El rojo es lacre apagado, no el carmesí de antes. Todos los valores están dentro de sRGB.</p>
+    <h3>Tinta (oscuro)</h3>
+    <div class="ramp">
+      <div class="sw" style="background:#110C09;color:#EFEBE2"><b>Fondo</b><code>#110C09</code><code>oklch(.16 .01 60)</code></div>
+      <div class="sw" style="background:#1A1511;color:#EFEBE2"><b>Superficie</b><code>#1A1511</code><code>oklch(.20 .011 60)</code></div>
+      <div class="sw" style="background:#26201C;color:#EFEBE2"><b>Elevada</b><code>#26201C</code><code>oklch(.25 .012 60)</code></div>
+      <div class="sw" style="background:#EFEBE2;color:#1F1915"><b>Hueso</b><code>#EFEBE2</code><code>oklch(.94 .012 85)</code></div>
+      <div class="sw" style="background:#A9A49B;color:#110C09"><b>Hueso 2</b><code>#A9A49B</code><code>oklch(.72 .014 80)</code></div>
+      <div class="sw" style="background:#D86258;color:#110C09"><b>Lacre</b><code>#D86258</code><code>oklch(.64 .15 27)</code></div>
+    </div>
+    <h3>Papel (claro)</h3>
+    <div class="ramp">
+      <div class="sw" style="background:#F6F3EC;color:#1F1915"><b>Fondo</b><code>#F6F3EC</code><code>oklch(.965 .01 85)</code></div>
+      <div class="sw" style="background:#EDE9E1;color:#1F1915"><b>Superficie</b><code>#EDE9E1</code><code>oklch(.935 .012 85)</code></div>
+      <div class="sw" style="background:#1F1915;color:#F6F3EC"><b>Tinta</b><code>#1F1915</code><code>oklch(.22 .012 60)</code></div>
+      <div class="sw" style="background:#5A544D;color:#F6F3EC"><b>Tinta 2</b><code>#5A544D</code><code>oklch(.45 .014 70)</code></div>
+      <div class="sw" style="background:#A83630;color:#F6F3EC"><b>Lacre</b><code>#A83630</code><code>oklch(.50 .15 27)</code></div>
+    </div>
+    <h3>Contraste medido (WCAG)</h3>
+    <div class="scroll">
+      <table class="pairs num">
+        <thead><tr><th>Texto</th><th>Sobre</th><th>Razón</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td>Hueso</td><td>Fondo tinta</td><td>16,3 : 1</td><td>Manuscrito</td></tr>
+          <tr><td>Hueso 2</td><td>Elevada tinta</td><td>6,5 : 1</td><td>Textos secundarios</td></tr>
+          <tr><td>Lacre</td><td>Fondo tinta</td><td>5,4 : 1</td><td>Iconos y enlaces</td></tr>
+          <tr><td>Tinta de fondo</td><td>Lacre</td><td>5,4 : 1</td><td>Texto de los botones</td></tr>
+          <tr><td class="fail">Hueso</td><td class="fail">Lacre</td><td class="fail">3,0 : 1</td><td class="fail">No usar en botones</td></tr>
+          <tr><td>Tinta</td><td>Fondo papel</td><td>15,7 : 1</td><td>Manuscrito</td></tr>
+          <tr><td>Lacre papel</td><td>Fondo papel</td><td>5,9 : 1</td><td>Acento y botones</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">El texto blanco sobre el lacre claro no llega a 4,5 : 1, por eso los botones del tema oscuro llevan texto tinta.</p>
+  </section>
+
+  <section>
+    <h2>Dos voces</h2>
+    <div class="type">
+      <div class="spec">
+        <h3>Newsreader · manuscrito y títulos</h3>
+        <div class="manuscript">La lluvia llevaba semanas golpeando el faro. Mara abre la puerta de la torre y sube sin mirar atrás. Arriba, la luz tiembla como un animal herido.</div>
+        <p class="muted num">Cuerpo 19 px, interlineado 1,7, ancho de 60 a 65 caracteres. Títulos de capítulo en 26 y 34 px.</p>
+      </div>
+      <div class="spec">
+        <h3>Instrument Sans · interfaz</h3>
+        <div class="ui-sample">
+          <div class="t1">Capítulo 12: La torre</div>
+          <div class="t2 num">2 480 palabras · 10 min de lectura · meta 71 %</div>
+          <div class="t2">Botones, pestañas y etiquetas van en 13 a 15 px, peso 500 o 600. Los números usan cifras tabulares para que los contadores no bailen.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cómo se ve</h2>
+    <p class="muted">Dos pantallas de ejemplo con la misma estructura: tres pestañas abajo (Escribir, Mundo, Proyectos) en lugar del menú lateral.</p>
+    <div class="phones">
+      <div class="phone tinta" aria-label="Pantalla de inicio en modo tinta">
+        <div class="p-top"><span class="num">22:14</span><span>Aura Novel</span></div>
+        <div class="p-label p-meta">Continuar</div>
+        <div class="p-h">El faro de Mara</div>
+        <div class="card">
+          <div class="p-label p-meta">Capítulo 12</div>
+          <div class="c-title">La torre</div>
+          <div class="p-meta num" style="font-size:12px">2 480 palabras hoy · meta 3 500</div>
+          <div class="bar"><i style="width:71%"></i></div>
+        </div>
+        <div class="card">
+          <div class="p-label p-meta">Mundo</div>
+          <div style="font-size:13px">3 contradicciones por revisar en el capítulo 11</div>
+        </div>
+        <div class="btn">Seguir escribiendo</div>
+        <div class="tabs"><span class="on">Escribir</span><span>Mundo</span><span>Proyectos</span></div>
+      </div>
+      <div class="phone papel" aria-label="Editor en modo papel">
+        <div class="p-top"><span class="num">09:40</span><span>Capítulo 12 · La torre</span></div>
+        <div class="page-text">Mara apoyó la mano en la piedra húmeda. <span class="ai">Desde abajo llegaba el rumor de las olas, y algo más, un golpeteo lento que no era el mar.</span></div>
+        <div class="p-label p-meta" style="margin-top:4px">Propuesta de la IA</div>
+        <div class="card" style="gap:10px">
+          <div style="font-size:13px">Aceptar o descartar el texto subrayado.</div>
+          <div style="display:flex;gap:8px"><div class="btn" style="flex:1">Aceptar</div><div class="btn" style="flex:1;background:transparent;border:1px solid var(--m-pdim);color:var(--m-pink)">Descartar</div></div>
+        </div>
+        <div class="tabs"><span class="on">Escribir</span><span>Mundo</span><span>Proyectos</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Movimiento</h2>
+    <div class="motion">
+      <div>
+        <div class="stream-box" id="stream" aria-live="polite"></div>
+        <button class="replay" id="replay" type="button">Repetir</button>
+      </div>
+      <dl>
+        <div><dt>El texto de la IA entra palabra a palabra</dt><dd>Un fundido de 260 ms por palabra, con el color lacre hasta que lo aceptas. Es la demostración de la izquierda.</dd></div>
+        <div><dt>Pasar de capítulo</dt><dd>Deslizamiento horizontal de 280 ms; la tarjeta del proyecto se expande hacia el editor.</dd></div>
+        <div><dt>Pines del mapa y eventos de la línea de tiempo</dt><dd>El pin cae con un pequeño rebote; el evento se eleva al arrastrarlo.</dd></div>
+        <div><dt>Carga</dt><dd>Esqueletos con la forma de la tarjeta, sin ruedas girando. Con "reducir movimiento" activado, todo aparece sin animar.</dd></div>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var box = document.getElementById('stream');
+  var old = 'Mara apoyó la mano en la piedra húmeda. ';
+  var fresh = 'Desde abajo llegaba el rumor de las olas, y algo más, un golpeteo lento que no era el mar.';
+  var timers = [];
+  function build() {
+    timers.forEach(clearTimeout); timers = [];
+    box.textContent = '';
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var parts = [{ t: old, n: false }, { t: fresh, n: true }];
+    var i = 0;
+    parts.forEach(function (p) {
+      p.t.split(/(\s+)/).forEach(function (w) {
+        if (!w) return;
+        var s = document.createElement('span');
+        s.className = 'w' + (p.n ? ' new' : '');
+        s.textContent = w;
+        box.appendChild(s);
+        if (!p.n || reduce) { s.classList.add('in'); return; }
+        timers.push(setTimeout(function () { s.classList.add('in'); }, 400 + i * 70));
+        i++;
+      });
+    });
+  }
+  document.getElementById('replay').addEventListener('click', build);
+  build();
+})();
+</script>

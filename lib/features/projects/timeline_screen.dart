@@ -7,6 +7,8 @@ import 'models/fantasy_calendar_model.dart';
 import 'models/project_model.dart';
 import 'models/timeline_event_model.dart';
 import 'project_repository.dart';
+import '../../core/theme/aura_theme.dart';
+import '../../core/widgets/skeleton.dart';
 
 /// Ordered list of the story world's events. Drag to reorder; each event can
 /// point at the chapter that narrates it.
@@ -92,8 +94,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A0B12),
-          title: Text(existing == null ? 'Nuevo evento' : 'Editar evento', style: const TextStyle(color: Colors.white, fontSize: 16)),
+          backgroundColor: context.aura.surface,
+          title: Text(existing == null ? 'Nuevo evento' : 'Editar evento', style: TextStyle(color: context.aura.text, fontSize: 16)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -102,7 +104,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 TextField(controller: date, decoration: const InputDecoration(labelText: 'Fecha del mundo (texto libre)')),
                 if (calendar != null) ...[
                   const SizedBox(height: 8),
-                  Text('O elige con tu calendario (${calendar.eraName})', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  Text('O elige con tu calendario (${calendar.eraName})', style: TextStyle(color: context.aura.textDim, fontSize: 12)),
                   Row(
                     children: [
                       Expanded(
@@ -119,7 +121,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         child: DropdownButtonFormField<int>(
                           initialValue: monthIndex,
                           isExpanded: true,
-                          dropdownColor: const Color(0xFF1A0B12),
+                          dropdownColor: context.aura.surface,
                           decoration: const InputDecoration(labelText: 'Mes'),
                           items: [
                             for (var i = 0; i < calendar.months.length; i++)
@@ -139,14 +141,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       ),
                     ],
                   ),
-                  if (dateError != null) Text(dateError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                  if (dateError != null) Text(dateError!, style: TextStyle(color: context.aura.danger, fontSize: 12)),
                 ],
                 TextField(controller: description, maxLines: 3, decoration: const InputDecoration(labelText: 'Notas')),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String?>(
                   initialValue: chapterId,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF1A0B12),
+                  dropdownColor: context.aura.surface,
                   decoration: const InputDecoration(labelText: 'Capítulo donde ocurre'),
                   items: [
                     const DropdownMenuItem<String?>(value: null, child: Text('Ninguno')),
@@ -161,11 +163,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
             if (existing != null)
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop('delete'),
-                child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+                child: Text('Eliminar', style: TextStyle(color: context.aura.danger)),
               ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+              child: Text('Cancelar', style: TextStyle(color: context.aura.textDim)),
             ),
             FilledButton(
               onPressed: () {
@@ -222,7 +224,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.aura.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -232,15 +234,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonList(count: 5, itemHeight: 64)
           : _events.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(32),
                     child: Text(
                       'Aún no hay eventos. Añade los hechos del mundo y enlázalos al capítulo donde los cuentas.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white54),
+                      style: TextStyle(color: context.aura.textDim),
                     ),
                   ),
                 )
@@ -248,22 +250,32 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                   itemCount: _events.length,
                   onReorderItem: _reorder,
+                  proxyDecorator: (child, index, animation) => AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, _) {
+                      final lift = Curves.easeOut.transform(animation.value);
+                      return Transform.scale(
+                        scale: 1 + 0.03 * lift,
+                        child: Material(elevation: 10 * lift, color: Colors.transparent, borderRadius: BorderRadius.circular(12), child: child),
+                      );
+                    },
+                  ),
                   itemBuilder: (context, index) {
                     final e = _events[index];
                     final chapter = _chapterTitle(e.chapterId);
                     return Card(
                       key: ValueKey(e.id),
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: context.aura.surface,
                       child: ListTile(
                         onTap: () => _edit(e),
-                        title: Text(e.title, style: const TextStyle(color: Colors.white)),
+                        title: Text(e.title, style: TextStyle(color: context.aura.text)),
                         subtitle: Text(
                           [if (e.worldDate.isNotEmpty) e.worldDate, if (chapter.isNotEmpty) 'Cap.: $chapter'].join(' · '),
-                          style: const TextStyle(color: Colors.white54),
+                          style: TextStyle(color: context.aura.textDim),
                         ),
                         trailing: ReorderableDragStartListener(
                           index: index,
-                          child: const Icon(Icons.drag_handle, color: Colors.white38),
+                          child: Icon(Icons.drag_handle, color: context.aura.textFaint),
                         ),
                       ),
                     );

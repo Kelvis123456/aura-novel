@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../projects/models/project_model.dart';
+import '../../../core/theme/aura_theme.dart';
 
 /// "Pertenece a": one project or the shared universe (null).
 class ProjectOwnerField extends StatelessWidget {
@@ -17,7 +18,7 @@ class ProjectOwnerField extends StatelessWidget {
     return DropdownButtonFormField<String?>(
       initialValue: known ? value : null,
       isExpanded: true,
-      dropdownColor: const Color(0xFF1A0B12),
+      dropdownColor: context.aura.surface,
       decoration: const InputDecoration(
         labelText: 'Pertenece a',
         helperText: 'Universo compartido = aparece en todos tus proyectos.',

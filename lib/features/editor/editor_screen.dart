@@ -3,20 +3,22 @@ import 'package:flutter/scheduler.dart';
 
 import '../../core/app_scope.dart';
 import '../lore/lore_studio_screen.dart';
+import '../projects/continue_card.dart';
 import '../projects/editor_document_binding.dart';
 import '../projects/models/story_node_model.dart';
-import '../projects/project_manager_screen.dart';
 import '../projects/project_repository.dart';
 import '../settings/api_settings_screen.dart';
 import 'draft_autosaver.dart';
 import 'editor_controller.dart';
 import 'prompt_bar_widgets.dart';
+import '../../core/theme/aura_theme.dart';
+import '../../core/widgets/aura_mark.dart';
 
 /// Full-screen immersive writing canvas for "AURA NOVEL": streams AI
 /// continuations directly into the document, offers a floating hot-prompt
 /// bar, and exposes rewrite/expand/tone actions on text selection.
 class EditorScreen extends StatefulWidget {
-  final Color accentColor;
+  final Color? accentColor;
   final TextStyle? canvasTextStyle;
 
   /// Pre-fills the canvas, typically with a [StoryNodeModel]'s saved content
@@ -27,12 +29,16 @@ class EditorScreen extends StatefulWidget {
   /// editor behaves as a scratch buffer and "Guardar versión" stays disabled.
   final EditorDocumentBinding? documentBinding;
 
+  /// Ticks when the Escribir tab is shown again; refreshes the continue card.
+  final ValueNotifier<int>? visitSignal;
+
   const EditorScreen({
     super.key,
-    this.accentColor = const Color(0xFFDC143C),
+    this.accentColor,
     this.canvasTextStyle,
     this.initialContent,
     this.documentBinding,
+    this.visitSignal,
   });
 
   @override
@@ -48,7 +54,6 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
   final _canvasScrollController = ScrollController();
   final _promptFieldController = TextEditingController();
   final _promptFocusNode = FocusNode();
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -168,10 +173,10 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
   }
 
   void _showToneMenu() {
-    final accent = widget.accentColor;
+    final accent = (widget.accentColor ?? context.aura.accent);
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF120709),
+      backgroundColor: context.aura.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -182,17 +187,17 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Text(
                     'CAMBIAR TONO',
-                    style: TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1.2),
+                    style: TextStyle(color: context.aura.textDim, fontSize: 12, letterSpacing: 1.2),
                   ),
                 ),
                 for (final tone in ToneShift.values)
                   ListTile(
                     leading: Icon(Icons.auto_awesome, color: accent, size: 18),
-                    title: Text(tone.label, style: const TextStyle(color: Colors.white)),
+                    title: Text(tone.label, style: TextStyle(color: context.aura.text)),
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       _controller.changeSelectionTone(tone);
@@ -248,13 +253,11 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.accentColor;
+    final accent = (widget.accentColor ?? context.aura.accent);
     final distractionFree = _controller.distractionFreeMode;
 
     return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: const Color(0xFF000000),
-      drawer: _buildDrawer(accent),
+      backgroundColor: context.aura.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -262,6 +265,8 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
             if (!distractionFree && _controller.wordGoal != null) _buildGoalBar(accent),
             if (!distractionFree && _controller.status == GenerationStatus.error)
               _buildErrorBanner(),
+            if (!distractionFree && _binding == null && widget.visitSignal != null && _controller.textController.text.isEmpty)
+              ContinueCard(refresh: widget.visitSignal!),
             Expanded(child: _buildCanvas(accent)),
             if (!distractionFree && _controller.pendingSuggestion != null && !_controller.isGenerating)
               _buildSuggestionBar(accent),
@@ -271,10 +276,10 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       ),
       floatingActionButton: distractionFree
           ? FloatingActionButton.small(
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              backgroundColor: context.aura.line,
               elevation: 0,
               onPressed: _controller.toggleDistractionFree,
-              child: const Icon(Icons.fullscreen_exit, color: Colors.white70),
+              child: Icon(Icons.fullscreen_exit, color: context.aura.textDim),
             )
           : null,
     );
@@ -285,12 +290,15 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white54, size: 20),
-            tooltip: 'Menú',
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          ),
-          Icon(Icons.circle, size: 8, color: _controller.isGenerating ? accent : Colors.white24),
+          if (Navigator.of(context).canPop())
+            IconButton(
+              icon: Icon(Icons.arrow_back, color: context.aura.textDim, size: 20),
+              tooltip: 'Volver',
+              onPressed: () => Navigator.of(context).maybePop(),
+            )
+          else
+            const Padding(padding: EdgeInsets.fromLTRB(12, 0, 12, 0), child: AuraMark(size: 26)),
+          Icon(Icons.circle, size: 8, color: _controller.isGenerating ? accent : context.aura.textFaint),
           const SizedBox(width: 8),
           Flexible(
             child: GestureDetector(
@@ -299,7 +307,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
                 '${_controller.wordCount} palabras · ${_controller.estimatedReadingMinutes} min de lectura'
                 '${_controller.estimatedSessionTokens > 0 ? ' · ~${_controller.estimatedSessionTokens} tokens IA' : ''}',
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: context.aura.textDim, fontSize: 12),
               ),
             ),
           ),
@@ -311,15 +319,15 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
               children: [
                 IconButton(
                   icon: const Icon(Icons.undo, size: 20),
-                  color: Colors.white54,
-                  disabledColor: Colors.white12,
+                  color: context.aura.textDim,
+                  disabledColor: context.aura.line,
                   tooltip: 'Deshacer',
                   onPressed: value.canUndo ? _undoController.undo : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.redo, size: 20),
-                  color: Colors.white54,
-                  disabledColor: Colors.white12,
+                  color: context.aura.textDim,
+                  disabledColor: context.aura.line,
                   tooltip: 'Rehacer',
                   onPressed: value.canRedo ? _undoController.redo : null,
                 ),
@@ -327,17 +335,25 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.bookmark_add_outlined, color: Colors.white54, size: 20),
+            icon: Icon(Icons.bookmark_add_outlined, color: context.aura.textDim, size: 20),
             tooltip: _binding == null ? 'Abre este capítulo desde "Mis Proyectos" para guardar versiones' : 'Guardar versión',
             onPressed: _binding == null ? null : _saveVersion,
           ),
+          if (_binding != null)
+            IconButton(
+              icon: Icon(Icons.public_outlined, color: context.aura.textDim, size: 20),
+              tooltip: 'Mundo de este proyecto',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => LoreStudioScreen(projectId: _binding?.projectId)),
+              ),
+            ),
           IconButton(
-            icon: const Icon(Icons.fullscreen, color: Colors.white54, size: 20),
+            icon: Icon(Icons.fullscreen, color: context.aura.textDim, size: 20),
             tooltip: 'Modo inmersivo',
             onPressed: _controller.toggleDistractionFree,
           ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white54, size: 20),
+            icon: Icon(Icons.settings_outlined, color: context.aura.textDim, size: 20),
             tooltip: 'Ajustes de API',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => ApiSettingsScreen(accentColor: accent)),
@@ -350,28 +366,28 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
 
   Future<void> _editWordGoal() async {
     final field = TextEditingController(text: _controller.wordGoal?.toString() ?? '');
-    final accent = widget.accentColor;
+    final accent = (widget.accentColor ?? context.aura.accent);
     final goal = await showDialog<int?>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0B12),
-        title: const Text('Meta de palabras', style: TextStyle(color: Colors.white)),
+        backgroundColor: context.aura.surface,
+        title: Text('Meta de palabras', style: TextStyle(color: context.aura.text)),
         content: TextField(
           controller: field,
           autofocus: true,
           keyboardType: TextInputType.number,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.aura.text),
+          decoration: InputDecoration(
             labelText: 'Palabras para esta sesión',
-            labelStyle: TextStyle(color: Colors.white54),
+            labelStyle: TextStyle(color: context.aura.textDim),
             helperText: 'Cuenta solo lo que escribas desde que abriste el capítulo.',
-            helperStyle: TextStyle(color: Colors.white38),
+            helperStyle: TextStyle(color: context.aura.textFaint),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(0),
-            child: const Text('Quitar meta', style: TextStyle(color: Colors.white54)),
+            child: Text('Quitar meta', style: TextStyle(color: context.aura.textDim)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(int.tryParse(field.text.trim()) ?? 0),
@@ -397,13 +413,13 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
               value: (written / goal).clamp(0.0, 1.0),
               minHeight: 2,
               color: accent,
-              backgroundColor: Colors.white12,
+              backgroundColor: context.aura.line,
             ),
           ),
           const SizedBox(width: 10),
           Text(
             written >= goal ? 'Meta cumplida · $written' : '$written / $goal',
-            style: TextStyle(color: written >= goal ? accent : Colors.white38, fontSize: 11),
+            style: TextStyle(color: written >= goal ? accent : context.aura.textFaint, fontSize: 11),
           ),
         ],
       ),
@@ -415,12 +431,12 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Row(
         children: [
-          const Expanded(
-            child: Text('Texto de la IA agregado', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Expanded(
+            child: Text('Texto de la IA agregado', style: TextStyle(color: context.aura.textDim, fontSize: 12)),
           ),
           TextButton(
             onPressed: _controller.discardSuggestion,
-            child: const Text('Descartar', style: TextStyle(color: Colors.white54)),
+            child: Text('Descartar', style: TextStyle(color: context.aura.textDim)),
           ),
           FilledButton(
             onPressed: _controller.acceptSuggestion,
@@ -432,78 +448,27 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
     );
   }
 
-  Drawer _buildDrawer(Color accent) {
-    return Drawer(
-      backgroundColor: const Color(0xFF0D0508),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                'AURA NOVEL',
-                style: TextStyle(color: accent, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1.2),
-              ),
-            ),
-            const Divider(color: Colors.white12, height: 1),
-            ListTile(
-              leading: Icon(Icons.auto_stories_outlined, color: accent),
-              title: const Text('Studio de Personajes y Lore', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => LoreStudioScreen(accentColor: accent, projectId: _binding?.projectId)),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.folder_open_outlined, color: accent),
-              title: const Text('Mis Proyectos', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ProjectManagerScreen(accentColor: accent)),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.settings_outlined, color: accent),
-              title: const Text('Ajustes de API', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ApiSettingsScreen(accentColor: accent)),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildErrorBanner() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withValues(alpha: 0.12),
+        color: context.aura.danger.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
+        border: Border.all(color: context.aura.danger.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent, size: 18),
+          Icon(Icons.error_outline, color: context.aura.danger, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               _controller.errorMessage ?? 'Ocurrió un error durante la generación.',
-              style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+              style: TextStyle(color: context.aura.danger, fontSize: 12),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.redAccent, size: 16),
+            icon: Icon(Icons.close, color: context.aura.danger, size: 16),
             onPressed: () {
               setState(() => _controller.status = GenerationStatus.idle);
             },
@@ -515,11 +480,11 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
 
   Widget _buildCanvas(Color accent) {
     final baseStyle = widget.canvasTextStyle ??
-        const TextStyle(
-          fontFamily: 'serif',
+        TextStyle(
+          fontFamily: AuraFonts.manuscript,
           fontSize: 19,
           height: 1.6,
-          color: Colors.white,
+          color: context.aura.text,
         );
 
     return GestureDetector(
@@ -541,10 +506,10 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
           style: baseStyle,
           cursorColor: accent,
           contextMenuBuilder: _contextMenuBuilder,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             border: InputBorder.none,
             hintText: 'Empieza a escribir, o pulsa "Continuar" para que la IA abra la escena…',
-            hintStyle: TextStyle(color: Colors.white24, fontFamily: 'serif', fontSize: 19),
+            hintStyle: TextStyle(color: context.aura.textFaint, fontFamily: AuraFonts.manuscript, fontSize: 19),
           ),
         ),
       ),
@@ -559,9 +524,9 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: context.aura.surface,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: context.aura.line),
         ),
         child: Row(
           children: [
@@ -574,13 +539,13 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
                 controller: _promptFieldController,
                 focusNode: _promptFocusNode,
                 enabled: !isGenerating,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: context.aura.text, fontSize: 14),
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   hintText: isGenerating
                       ? 'Generando…'
                       : 'Instrucción rápida (ej. "aumenta la tensión")',
-                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+                  hintStyle: TextStyle(color: context.aura.textFaint, fontSize: 14),
                 ),
                 onSubmitted: (_) => _handlePrimaryAction(),
               ),

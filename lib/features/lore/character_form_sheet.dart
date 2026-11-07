@@ -6,6 +6,7 @@ import '../projects/models/project_model.dart';
 import 'widgets/project_owner_field.dart';
 import 'widgets/tag_input_field.dart';
 import 'widgets/visible_from_field.dart';
+import '../../core/theme/aura_theme.dart';
 
 /// Full-height create/edit form for a [CharacterModel]. Pops with the
 /// resulting model on save, or `null` if dismissed without saving.
@@ -38,7 +39,7 @@ class CharacterFormSheet extends StatefulWidget {
     return showModalBottomSheet<CharacterModel>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D0508),
+      backgroundColor: context.aura.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -157,14 +158,14 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: context.aura.textFaint,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
                 Text(
                   _isEditing ? 'Editar personaje' : 'Nuevo personaje',
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.aura.text, fontSize: 18, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 20),
                 _field('Nombre', _nameField, errorText: _nameError, accent: accent),
@@ -192,7 +193,7 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('RELACIONES', style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.1)),
+                    Text('RELACIONES', style: TextStyle(color: context.aura.textDim, fontSize: 11, letterSpacing: 1.1)),
                     TextButton.icon(
                       onPressed: widget.otherCharacters.isEmpty ? null : _addRelationship,
                       icon: Icon(Icons.add, size: 16, color: accent),
@@ -211,10 +212,10 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
                   value: _forceInclude,
                   onChanged: (v) => setState(() => _forceInclude = v),
                   activeThumbColor: accent,
-                  title: const Text('Forzar inclusión en la IA', style: TextStyle(color: Colors.white, fontSize: 14)),
-                  subtitle: const Text(
+                  title: Text('Forzar inclusión en la IA', style: TextStyle(color: context.aura.text, fontSize: 14)),
+                  subtitle: Text(
                     'Se incluirá en el contexto aunque no se mencione en el texto actual.',
-                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                    style: TextStyle(color: context.aura.textFaint, fontSize: 12),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -244,8 +245,8 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
             flex: 2,
             child: DropdownButtonFormField<String>(
               initialValue: options.any((c) => c.id == relationship.characterId) ? relationship.characterId : null,
-              dropdownColor: const Color(0xFF1A0B12),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              dropdownColor: context.aura.surface,
+              style: TextStyle(color: context.aura.text, fontSize: 13),
               decoration: const InputDecoration(isDense: true, border: InputBorder.none),
               items: options
                   .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name, overflow: TextOverflow.ellipsis)))
@@ -264,11 +265,11 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
             flex: 3,
             child: TextFormField(
               initialValue: relationship.description,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: const InputDecoration(
+              style: TextStyle(color: context.aura.text, fontSize: 13),
+              decoration: InputDecoration(
                 isDense: true,
                 hintText: 'ej. hermano mayor, protector',
-                hintStyle: TextStyle(color: Colors.white38, fontSize: 12),
+                hintStyle: TextStyle(color: context.aura.textFaint, fontSize: 12),
                 border: InputBorder.none,
               ),
               onChanged: (value) => _relationships[index] = CharacterRelationship(
@@ -278,7 +279,7 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, size: 16, color: Colors.white38),
+            icon: Icon(Icons.close, size: 16, color: context.aura.textFaint),
             onPressed: () => _removeRelationship(index),
           ),
         ],
@@ -296,13 +297,13 @@ class _CharacterFormSheetState extends State<CharacterFormSheet> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
+      style: TextStyle(color: context.aura.text, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         errorText: errorText,
-        labelStyle: const TextStyle(color: Colors.white54),
+        labelStyle: TextStyle(color: context.aura.textDim),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.04),
+        fillColor: context.aura.surface,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
