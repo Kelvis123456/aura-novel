@@ -18,6 +18,8 @@ import 'project_controller.dart';
 import 'timeline_screen.dart';
 import 'wiki_export_service.dart';
 import '../../core/theme/aura_theme.dart';
+import '../../core/widgets/aura_mark.dart';
+import '../../core/widgets/skeleton.dart';
 
 /// Entry point for project management: list projects → drill into a
 /// project's chapters → drill into a chapter's branching history
@@ -209,22 +211,31 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [context.aura.surface, context.aura.bg],
-          ),
+          color: context.aura.bg,
         ),
         child: _controller.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonList()
             : _controller.projects.isEmpty
                 ? Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        'Aún no hay proyectos. Pulsa "+" para crear el primero.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: context.aura.textFaint, fontSize: 13),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const AuraMark(size: 72),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Tu primera novela empieza aquí',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontFamily: AuraFonts.manuscript, fontSize: 24, color: context.aura.text),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Crea un proyecto con "+", añade capítulos y escribe con la IA que prefieras.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.aura.textDim, fontSize: 14),
+                          ),
+                        ],
                       ),
                     ),
                   )
@@ -560,14 +571,10 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [context.aura.surface, context.aura.bg],
-          ),
+          color: context.aura.bg,
         ),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonList()
             : _chapters.isEmpty
                 ? Center(
                     child: Padding(
@@ -766,14 +773,10 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [context.aura.surface, context.aura.bg],
-          ),
+          color: context.aura.bg,
         ),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonList()
             : BranchTreeViewer(
                 nodes: _nodes,
                 selectedNodeId: _selectedNodeId,

@@ -99,11 +99,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [context.aura.surface, context.aura.bg],
-          ),
+          color: context.aura.bg,
         ),
         child: _controller.isLoading
             ? const Center(child: CircularProgressIndicator())

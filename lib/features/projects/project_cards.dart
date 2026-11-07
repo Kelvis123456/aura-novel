@@ -23,16 +23,13 @@ class ProjectCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(18, 16, 8, 16),
             decoration: BoxDecoration(
               color: context.aura.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.aura.line),
             ),
             child: Row(
               children: [
-                Icon(Icons.menu_book_outlined, color: accent, size: 22),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +38,7 @@ class ProjectCard extends StatelessWidget {
                         project.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: context.aura.text, fontSize: 15, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontFamily: AuraFonts.manuscript, color: context.aura.text, fontSize: 22, height: 1.15),
                       ),
                       if (project.synopsis.trim().isNotEmpty)
                         Padding(
@@ -50,7 +47,7 @@ class ProjectCard extends StatelessWidget {
                             project.synopsis,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: context.aura.textDim, fontSize: 12),
+                            style: TextStyle(color: context.aura.textDim, fontSize: 13),
                           ),
                         ),
                     ],

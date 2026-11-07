@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:aura_novel/features/projects/models/map_pin_model.dart';
 import 'package:aura_novel/features/projects/models/project_model.dart';
+import 'package:aura_novel/features/projects/models/story_node_model.dart';
 import 'package:aura_novel/features/projects/project_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -66,6 +67,24 @@ void main() {
     await repo.deleteMapPin('a');
     await repo.importAll(data);
     expect(await repo.getMapPins('p'), hasLength(1));
+  });
+
+  test('getLastEdited devuelve el capítulo con la versión más reciente', () async {
+    await repo.saveProject(ProjectModel(id: 'p', title: 'Libro', createdAt: DateTime(2026), updatedAt: DateTime(2026)));
+    await repo.saveChapter(const ChapterModel(id: 'c1', projectId: 'p', title: 'Uno', order: 0));
+    await repo.saveChapter(const ChapterModel(id: 'c2', projectId: 'p', title: 'Dos', order: 1));
+    await repo.saveNode(StoryNodeModel(id: 'n1', chapterId: 'c1', content: 'a', timestamp: DateTime(2026, 1, 2)));
+    await repo.saveNode(StoryNodeModel(id: 'n2', chapterId: 'c2', content: 'b', timestamp: DateTime(2026, 1, 3)));
+
+    final last = await repo.getLastEdited();
+
+    expect(last!.chapter.title, 'Dos');
+    expect(last.project.title, 'Libro');
+    expect(last.node.content, 'b');
+  });
+
+  test('getLastEdited es null sin versiones guardadas', () async {
+    expect(await repo.getLastEdited(), isNull);
   });
 
   test('migra una base v5 sin perder datos y crea mapa y pines', () async {

@@ -236,11 +236,18 @@ class _MapScreenState extends State<MapScreen> {
                                   Positioned(
                                     left: pin.x * area.maxWidth - 14,
                                     top: pin.y * area.maxHeight - 28,
+                                    key: ValueKey(pin.id),
                                     child: GestureDetector(
                                       onTap: () => _showPin(pin),
-                                      child: Tooltip(
-                                        message: pin.label,
-                                        child: Icon(Icons.location_on, size: 28, color: widget.accent),
+                                      child: TweenAnimationBuilder<double>(
+                                        tween: Tween(begin: 0, end: 1),
+                                        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 520),
+                                        curve: Curves.elasticOut,
+                                        builder: (context, t, child) => Transform.scale(scale: t, alignment: Alignment.bottomCenter, child: child),
+                                        child: Tooltip(
+                                          message: pin.label,
+                                          child: Icon(Icons.location_on, size: 28, color: widget.accent),
+                                        ),
                                       ),
                                     ),
                                   ),

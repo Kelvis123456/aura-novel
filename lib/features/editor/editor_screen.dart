@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../core/app_scope.dart';
 import '../lore/lore_studio_screen.dart';
+import '../projects/continue_card.dart';
 import '../projects/editor_document_binding.dart';
 import '../projects/models/story_node_model.dart';
 import '../projects/project_repository.dart';
@@ -28,12 +29,16 @@ class EditorScreen extends StatefulWidget {
   /// editor behaves as a scratch buffer and "Guardar versión" stays disabled.
   final EditorDocumentBinding? documentBinding;
 
+  /// Ticks when the Escribir tab is shown again; refreshes the continue card.
+  final ValueNotifier<int>? visitSignal;
+
   const EditorScreen({
     super.key,
     this.accentColor,
     this.canvasTextStyle,
     this.initialContent,
     this.documentBinding,
+    this.visitSignal,
   });
 
   @override
@@ -260,6 +265,8 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
             if (!distractionFree && _controller.wordGoal != null) _buildGoalBar(accent),
             if (!distractionFree && _controller.status == GenerationStatus.error)
               _buildErrorBanner(),
+            if (!distractionFree && _binding == null && widget.visitSignal != null && _controller.textController.text.isEmpty)
+              ContinueCard(refresh: widget.visitSignal!),
             Expanded(child: _buildCanvas(accent)),
             if (!distractionFree && _controller.pendingSuggestion != null && !_controller.isGenerating)
               _buildSuggestionBar(accent),

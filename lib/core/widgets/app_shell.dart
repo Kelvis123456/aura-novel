@@ -17,6 +17,13 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  final _visits = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _visits.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +32,10 @@ class _AppShellState extends State<AppShell> {
       backgroundColor: c.bg,
       body: IndexedStack(
         index: _index,
-        children: const [
-          EditorScreen(),
-          LoreStudioScreen(showAllProjects: true),
-          ProjectManagerScreen(),
+        children: [
+          EditorScreen(visitSignal: _visits),
+          const LoreStudioScreen(showAllProjects: true),
+          const ProjectManagerScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBarTheme(
@@ -51,7 +58,10 @@ class _AppShellState extends State<AppShell> {
           decoration: BoxDecoration(border: Border(top: BorderSide(color: c.line))),
           child: NavigationBar(
             selectedIndex: _index,
-            onDestinationSelected: (i) => setState(() => _index = i),
+            onDestinationSelected: (i) {
+              setState(() => _index = i);
+              if (i == 0) _visits.value++;
+            },
             destinations: const [
               NavigationDestination(icon: Icon(Icons.edit_outlined), selectedIcon: Icon(Icons.edit), label: 'Escribir'),
               NavigationDestination(icon: Icon(Icons.public_outlined), selectedIcon: Icon(Icons.public), label: 'Mundo'),

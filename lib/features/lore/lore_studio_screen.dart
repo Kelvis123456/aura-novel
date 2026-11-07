@@ -8,6 +8,7 @@ import 'models/character_model.dart';
 import 'models/lore_item_model.dart';
 import '../projects/models/project_model.dart';
 import '../../core/theme/aura_theme.dart';
+import '../../core/widgets/skeleton.dart';
 
 /// Studio de Personajes y Lore: two tabs (Personajes / Lore y Mundo) backed
 /// by [LoreStudioController], each with search, dark-glassmorphism cards,
@@ -117,7 +118,7 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Studio de Personajes y Lore'),
+        title: const Text('Mundo'),
         actions: [
           IconButton(
             icon: Icon(_controller.showAll ? Icons.filter_alt_off : Icons.filter_alt_outlined),
@@ -138,14 +139,10 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.6),
-            radius: 1.4,
-            colors: [context.aura.surface, context.aura.bg],
-          ),
+          color: context.aura.bg,
         ),
         child: _controller.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonList(count: 5, itemHeight: 70)
             : Column(
                 children: [
                   _buildSearchBar(accent),

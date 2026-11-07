@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/app_scope.dart';
 import 'core/theme/aura_theme.dart';
@@ -85,6 +86,18 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
         theme: AuraTheme.light,
         darkTheme: AuraTheme.dark,
         themeMode: ThemeMode.system,
+        builder: (context, child) {
+          final dark = Theme.of(context).brightness == Brightness.dark;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+              systemNavigationBarColor: context.aura.bg,
+              systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+            ),
+            child: child!,
+          );
+        },
         home: const AppShell(),
       ),
     );

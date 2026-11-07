@@ -282,6 +282,20 @@ class ProjectRepository {
     await db.delete('map_pins', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// The chapter whose newest saved version is the most recent one overall.
+  Future<LastEdited?> getLastEdited() async {
+    final db = await _database;
+    final nodes = await db.query('story_nodes', orderBy: 'timestamp DESC', limit: 1);
+    if (nodes.isEmpty) return null;
+    final node = StoryNodeModel.fromMap(nodes.first);
+    final chapters = await db.query('chapters', where: 'id = ?', whereArgs: [node.chapterId], limit: 1);
+    if (chapters.isEmpty) return null;
+    final chapter = ChapterModel.fromMap(chapters.first);
+    final project = await getProject(chapter.projectId);
+    if (project == null) return null;
+    return LastEdited(project: project, chapter: chapter, node: node);
+  }
+
   // ---- Backup ---------------------------------------------------------------
 
   /// Raw rows of every table that holds the author's work. Drafts are left
@@ -337,6 +351,15 @@ class ProjectRepository {
     await _db?.close();
     _db = null;
   }
+}
+
+/// Result of [ProjectRepository.getLastEdited].
+class LastEdited {
+  final ProjectModel project;
+  final ChapterModel chapter;
+  final StoryNodeModel node;
+
+  const LastEdited({required this.project, required this.chapter, required this.node});
 }
 
 /// Unsaved text of a chapter, tied to the story node it was edited from.

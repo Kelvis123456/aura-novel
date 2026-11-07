@@ -8,6 +8,7 @@ import 'models/project_model.dart';
 import 'models/timeline_event_model.dart';
 import 'project_repository.dart';
 import '../../core/theme/aura_theme.dart';
+import '../../core/widgets/skeleton.dart';
 
 /// Ordered list of the story world's events. Drag to reorder; each event can
 /// point at the chapter that narrates it.
@@ -233,7 +234,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonList(count: 5, itemHeight: 64)
           : _events.isEmpty
               ? Center(
                   child: Padding(
@@ -249,6 +250,16 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                   itemCount: _events.length,
                   onReorderItem: _reorder,
+                  proxyDecorator: (child, index, animation) => AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, _) {
+                      final lift = Curves.easeOut.transform(animation.value);
+                      return Transform.scale(
+                        scale: 1 + 0.03 * lift,
+                        child: Material(elevation: 10 * lift, color: Colors.transparent, borderRadius: BorderRadius.circular(12), child: child),
+                      );
+                    },
+                  ),
                   itemBuilder: (context, index) {
                     final e = _events[index];
                     final chapter = _chapterTitle(e.chapterId);
