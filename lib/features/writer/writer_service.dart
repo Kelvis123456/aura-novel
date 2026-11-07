@@ -72,7 +72,13 @@ class WriterService {
       messages: [
         await _composer.chatSystem(profile),
         ...context,
-        for (final e in recent) ChatMessage(role: e.role, content: e.content),
+        // Only the last two turns keep their full text; long chapters further back
+        // would fill the context window and the manuscript is the real memory.
+        for (var i = 0; i < recent.length; i++)
+          ChatMessage(
+            role: recent[i].role,
+            content: i >= recent.length - 2 ? recent[i].content : ChapterSummaryService.clipMiddle(recent[i].content, 1800),
+          ),
       ],
     );
     await for (final chunk in _client.stream(request)) {

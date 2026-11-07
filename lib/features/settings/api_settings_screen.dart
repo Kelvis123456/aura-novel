@@ -27,6 +27,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
   late final TextEditingController _baseUrlField;
   late final TextEditingController _apiKeyField;
   late final TextEditingController _modelIdField;
+  late final TextEditingController _researchField;
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
     _baseUrlField = TextEditingController();
     _apiKeyField = TextEditingController();
     _modelIdField = TextEditingController();
+    _researchField = TextEditingController();
     _controller.load().then((_) => _syncFieldsFromController());
   }
 
@@ -44,6 +46,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
     _baseUrlField.text = _controller.baseUrl;
     _apiKeyField.text = _controller.apiKey;
     _modelIdField.text = _controller.modelId;
+    _researchField.text = _controller.researchModelId;
     setState(() {});
   }
 
@@ -54,6 +57,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
     _baseUrlField.dispose();
     _apiKeyField.dispose();
     _modelIdField.dispose();
+    _researchField.dispose();
     super.dispose();
   }
 
@@ -125,7 +129,35 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _sectionTitle('Endpoint'),
+                              const SizedBox(height: 4),
+                              Text(
+                                'La app no filtra nada: lo que se puede escribir lo decide el modelo que conectes. Los modelos locales o de proveedores sin censura escriben con más libertad que los comerciales.',
+                                style: TextStyle(color: context.aura.textFaint, fontSize: 12),
+                              ),
                               const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
+                                  for (final (label, url, model) in const [
+                                    ('Gemini gratis', 'https://generativelanguage.googleapis.com/v1beta/openai', 'gemini-2.0-flash'),
+                                    ('OpenRouter', 'https://openrouter.ai/api/v1', 'nousresearch/hermes-3-llama-3.1-70b'),
+                                    ('Ollama (tu PC)', 'http://IP-DE-TU-PC:11434/v1', 'llama3.1'),
+                                    ('LM Studio (tu PC)', 'http://IP-DE-TU-PC:1234/v1', 'local-model'),
+                                  ])
+                                    ActionChip(
+                                      label: Text(label, style: TextStyle(color: context.aura.text, fontSize: 12)),
+                                      backgroundColor: context.aura.surface,
+                                      side: BorderSide(color: context.aura.line),
+                                      onPressed: () {
+                                        _controller.applyPreset(url, model);
+                                        _baseUrlField.text = url;
+                                        _modelIdField.text = model;
+                                      },
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
                               _buildTextField(
                                 controller: _baseUrlField,
                                 label: 'Base URL',
@@ -163,6 +195,19 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 onChanged: _controller.updateModelId,
                                 accent: accent,
                               ),
+                              const SizedBox(height: 14),
+                              _buildTextField(
+                                controller: _researchField,
+                                label: 'Modelo de investigación (opcional)',
+                                hint: 'perplexity/sonar o un modelo ":online"',
+                                onChanged: _controller.updateResearchModelId,
+                                accent: accent,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Para investigar con datos de la web, usa un modelo con búsqueda. Si lo dejas vacío, investiga el mismo modelo que escribe.',
+                                style: TextStyle(color: context.aura.textFaint, fontSize: 12),
+                              ),
                             ],
                           ),
                         ),
@@ -186,9 +231,9 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                               _buildSlider(
                                 label: 'Max Tokens',
                                 value: _controller.maxTokens.toDouble(),
-                                min: 100,
-                                max: 4096,
-                                divisions: 100,
+                                min: 256,
+                                max: 16000,
+                                divisions: 157,
                                 displayValue: _controller.maxTokens.toString(),
                                 onChanged: (v) => _controller.updateMaxTokens(v.round()),
                                 accent: accent,
