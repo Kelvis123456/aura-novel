@@ -38,4 +38,4 @@ Funciona en mi Galaxy S10+. Solo probé Android. La respuesta de la IA llega en 
 
 Los tests están en `test/` (`flutter test`) y cubren el cliente, el contexto del lore, el export EPUB, los repositorios con sus migraciones, el autosave, los resúmenes y la copia de seguridad. Las pantallas nuevas (línea de tiempo, calendario, mapa, wiki) las probé solo con los tests de la capa de datos y de generación; no las he abierto en el teléfono. La interfaz no tiene tests de widgets. La restauración de copias usa `file_picker` y no la he probado en el teléfono todavía.
 
-Las decisiones de diseño están en [docs/decisions.md](docs/decisions.md).
+Las decisiones de diseño están en [docs/decisions.md](docs/decisions.md) y lo que sale del teléfono, en [docs/privacidad.md](docs/privacidad.md).
