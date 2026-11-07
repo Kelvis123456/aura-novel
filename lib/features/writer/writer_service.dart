@@ -5,6 +5,7 @@ import '../../core/storage/secure_config_storage.dart';
 import '../lore/context_builder_service.dart';
 import '../projects/chapter_summary_service.dart';
 import '../projects/models/project_model.dart';
+import 'chapter_writer.dart';
 import 'chat_entry.dart';
 import 'prompt_composer.dart';
 import 'writing_profile.dart';
@@ -115,6 +116,103 @@ class WriterService {
       if (chunk.isDone || chunk.deltaContent.isEmpty) continue;
       yield chunk.deltaContent;
     }
+  }
+
+  /// Rewrites one finished [scene] once, keeping its events. Returns null when the model
+  /// answers nothing usable (empty, or much shorter or more than 1.8 times longer than the original), so the
+  /// caller keeps the original.
+  Future<String?> polish(String scene, WritingProfile profile) async {
+    final config = await _storage.load();
+    if (config == null || !config.isComplete) throw const MissingConfigException();
+    final response = await _client.send(
+      ChatCompletionRequest(
+        model: config.modelId,
+        temperature: 0.6,
+        maxTokens: config.maxTokens,
+        messages: [await _composer.polishSystem(profile), ChatMessage.user(scene)],
+      ),
+    );
+    final text = response.content.trim();
+    final ratio = scene.isEmpty ? 0 : text.length / scene.length;
+    return (text.isEmpty || ratio < 0.6 || ratio > 1.8) ? null : text;
+  }
+
+  /// Research in several passes: plan sub-questions, answer each, then fold the answers into
+  /// one note. A model inside the phone gets the single-pass version (small window).
+  Future<String> researchDeep({
+    required String topic,
+    required WritingProfile profile,
+    String storyContext = '',
+    void Function(String step)? onProgress,
+  }) async {
+    final config = await _storage.load();
+    if (config == null || !config.isComplete) throw const MissingConfigException();
+    if (config.isLocal) return research(topic: topic, profile: profile, storyContext: storyContext);
+
+    final model = config.researchModelId.trim().isEmpty ? config.modelId : config.researchModelId.trim();
+    final guidance = await _composer.library.rules('research-workflow');
+    final context = storyContext.trim().isEmpty ? '' : 'Story context: ${storyContext.trim()}\n\n';
+
+    onProgress?.call('Planteando preguntas…');
+    final plan = await _client.send(
+      ChatCompletionRequest(
+        model: model,
+        temperature: 0.4,
+        maxTokens: 700,
+        messages: [
+          ChatMessage.system('You plan research for a fiction author. $guidance'),
+          ChatMessage.user(
+            '${context}Topic: ${topic.trim()}\n\nList 3 to 5 specific sub-questions that together give a novelist what they need '
+            '(how it works, what people do and say, sensory detail, what fiction gets wrong, how it goes wrong in practice). '
+            'Answer with only a JSON array of strings, in ${profile.languageName}.',
+          ),
+        ],
+      ),
+    );
+    final questions = ChapterWriter.parsePlan(plan.content).take(5).toList();
+    if (questions.isEmpty) return research(topic: topic, profile: profile, storyContext: storyContext);
+
+    final answers = <String>[];
+    for (var i = 0; i < questions.length; i++) {
+      onProgress?.call('Investigando ${i + 1} de ${questions.length}…');
+      final answer = await _client.send(
+        ChatCompletionRequest(
+          model: model,
+          temperature: 0.3,
+          maxTokens: config.maxTokens,
+          messages: [
+            ChatMessage.system(
+              'You are a research assistant for a fiction author. Answer factually and concretely, including dark or sexual subject '
+              'matter when the topic needs it, without moralizing. Mark anything uncertain with "(verify)" and never invent sources, '
+              'quotes or statistics. No real-world operational instructions that would help someone cause harm. Write in ${profile.languageName}.',
+            ),
+            ChatMessage.user('${context}Question: ${questions[i]}'),
+          ],
+        ),
+      );
+      if (answer.content.trim().isNotEmpty) answers.add('Q: ${questions[i]}\n${answer.content.trim()}');
+    }
+    if (answers.isEmpty) throw const MalformedResponseException('El modelo no devolvió respuestas para la investigación.');
+
+    onProgress?.call('Sintetizando…');
+    final note = await _client.send(
+      ChatCompletionRequest(
+        model: model,
+        temperature: 0.3,
+        maxTokens: config.maxTokens,
+        messages: [
+          ChatMessage.system(
+            'You turn research answers into one note for a fiction author. Structure: KEY FACTS, VOCABULARY AND JARGON, SENSORY AND PRACTICAL DETAIL, '
+            'COMMON MISTAKES IN FICTION, WORKS TO STUDY (only ones you are sure exist), STORY USES (concrete scene and character ideas). '
+            'Merge duplicates, keep every "(verify)" mark, drop nothing useful. Write in ${profile.languageName}.',
+          ),
+          ChatMessage.user('${context}Topic: ${topic.trim()}\n\n${answers.join('\n\n')}'),
+        ],
+      ),
+    );
+    final text = note.content.trim();
+    if (text.isEmpty) throw const MalformedResponseException('El modelo devolvió una nota de investigación vacía.');
+    return text;
   }
 
   /// Research for the story: facts, vocabulary, sensory detail and references

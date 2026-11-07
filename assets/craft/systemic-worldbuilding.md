@@ -32,3 +32,43 @@ Use when the author introduces a new technology, species, magic, or alternate hi
 
 ## How to apply
 Reply in the language of the request. Return a paste-ready sheet with these headings: Divergence Point (one or two sentences, precise); Consequence Chains (for the two or three richest chains, list order 1, 2 and 3 as arrows with concrete specifics); Domain Impacts (economy, power, social, culture and belief, environment, one short entry each); Intersections (class, geography, generation, margins, nations); Contradiction Map (two or three tensions and how groups rationalize them); Adaptations (institutional, underground, pathological, ideological, technological); Visibility Markers (physical, behavioral, social, linguistic, plus five new terms); Story Potential (the points of maximum tension, ranked). Mark invented elements as proposals, stay consistent with any lore the user supplied, and state which timescale each chain covers.
+
+## Deep notes
+
+Writing a divergence point. State it in one or two sentences with a boundary: what changes, what does not, and what the limits are. "Magic exists" is a mood; "a person can trade years of life for years of another's talent, once a year, through a licensed broker" is a divergence. Limits generate consequences, so list cost, scarcity, requirements and failure modes. A change without limits cannot be traced.
+
+Ask the first-order questions in sequence, then repeat "and then what?" until at least three orders are written down. A cascade that stops at "there is FTL travel" is the Cool Tech Trap; the repair is to ask what becomes cheap, what becomes dangerous, who regulates the lanes, and who loses a home-world monopoly.
+
+Worked example in more detail: the Borrower's Market, where years of life are traded for talents.
+- Economy: underground markets, talent brokers who build infrastructure, legal gray zones.
+- Social structure: class divisions between buyers and sellers, a split between talent donors and lifespan donors, new forms of debt and obligation.
+- Belief: Naturalists reject every exchange; Exchangists treat fluid talent as liberation; philosophers argue over life as a commodity.
+- Conflict: talent thieves who take without consent, attempts at government regulation, religious extremists on both sides.
+- Control: a Broker's Guild regulating trades, talent purity standards, research into the mechanism.
+- Geography: the origin point becomes a pilgrimage site and the idea shows up in architecture.
+Every level adds a person who wants something, which is what a story can use.
+
+Timescales. Short-term (years) gives reactions and first implementations. Medium-term (decades) gives institutions that adapt, laws that settle, professions that vanish. Long-term (generations) gives psychological and cultural shifts, such as children who cannot imagine the old way. Label each chain with its horizon, because mixing them produces implausible results, like a dominant religion forming within one year.
+
+Contradiction mining. For each change ask what is desirable, what is dangerous, how different groups weigh the tradeoff, and what rationalizations excuse the downside. Aim for two or three inherent contradictions. If every consequence points the same way, the analysis stopped too early.
+
+Intersections. Map at least three: class (who adapts, who is left behind), geography (urban versus rural, rich versus poor regions), generation (the equivalent of digital natives versus immigrants), marginalized communities (new opportunity or new oppression) and nations (different responses to the same change). Groups meeting the same change differently is where plausibility comes from.
+
+Adaptation categories, one example each. Institutional: a license office. Criminal: a smuggling ring. Pathological: someone who cannot stop using it. Ideological: a movement for and a movement against. Technological: a work-around device. If you cannot fill all five, the world is thinner than you think.
+
+Visibility markers, concretely. Physical: scars, devices, clothing made to hide or show. Behavioral: new habits, skills, avoidances. Social: status symbols and group badges. Linguistic: terminology, accent, fluency. Ask what a stranger would notice in the first ten minutes in town, and write five new terms, including slang and insults, that ordinary people would use.
+
+Depth, breadth and tracers.
+- Depth: pick two or three domains and run a chain through every level.
+- Breadth: touch many domains lightly so the world feels connected.
+- Tracer: follow one object, person or institution across domains, such as a single contract passing through broker, court, temple and market. Tracers keep exploration tied to a story.
+
+Focusing a large cascade. Filter by what affects the viewpoint character, what drives the plot and what serves the theme. Anything outside the filter can stay a one-line note.
+
+Domain-by-domain tracking. Keep separate notes for technology (feasibility, limits), economy (markets, winners, losers), politics (power, regulation), society (norms, identities), culture (belief, language, art) and environment (physical impact, geography), then check consistency across them. When two notes conflict, the conflict is often the best material.
+
+What to verify yourself. Whether B follows from A, domain coverage and depth reached can be checked mechanically. Plausibility, story relevance and interest need the author's judgment, and specialist consequences (military, medical, legal) may need outside knowledge. A chain can be logical and still boring or wrong for the book.
+
+Signs the method is misapplied: no clear divergence point, stopping at surface consequences, everything positive or everything negative, one domain explored repeatedly.
+
+Final checklist: one precise divergence, first-order impacts across all major domains, two or three contradictions, group responses mapped, two or three chains at third order, unexpected intersections, visibility markers, new vocabulary, and the ranked points of maximum tension.

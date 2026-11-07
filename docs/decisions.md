@@ -78,3 +78,13 @@ La app puede hablar con un servidor OpenAI-compatible o correr un modelo en el p
 - **Ventana pequeña.** El modelo local se carga con 6144 tokens de contexto. Por eso usa siempre el prompt de oficio corto, guarda menos turnos de charla (4, recortados), el escritor de capítulos arrastra menos texto previo y el tope de tokens de respuesta se recorta a lo que queda de ventana tras el prompt. Antes de ese recorte la generación se quedaba en blanco sin error.
 
 Probado: carga y responde en el emulador de Android (x86_64, 2,5 GB de RAM, muy lento: unos 4 minutos para un párrafo). La velocidad real en un teléfono arm64 sin medir.
+
+## 2026-11-07: Oficio completo: 34 módulos, notas profundas y pasadas automáticas
+La primera versión de los módulos de oficio estaba comprimida (unas 600 palabras por skill) y dejaba fuera las skills de publicar, investigar y resumir. Cambios:
+- **Notas profundas.** Cada módulo tiene una sección `## Deep notes` (600 a 850 palabras: marcos paso a paso, ejemplos antes y después, umbrales, listas de fallos). Solo entran en las herramientas que lanzas tú; las reglas que acompañan a todo lo que escribe la IA siguen siendo la sección `Core rules`. Con un modelo pequeño (local) las herramientas también omiten las notas profundas.
+- **`story-long-write` repartida en cinco módulos.** Sus 38 archivos de referencia se leyeron enteros y quedaron como `long-form-hooks`, `long-form-plot`, `long-form-continuity`, `long-form-style` y `long-form-genres`. `long-form-style` (manías y listas de palabras a evitar) entró entre las reglas siempre activas.
+- **Tres skills nuevas:** `book-marketing` (grupo Publicar: contraportada, descripción de tienda, pitch), `research-workflow` y `summarization`.
+- **Investigación profunda.** El modo Investigar planea de 3 a 5 subpreguntas, responde cada una y sintetiza (5 a 7 llamadas). Se puede quitar con el chip "Profunda"; con un modelo local va en una sola llamada.
+- **Resúmenes de capítulo** con los principios de `summarization` y un prompt que pide estado de personajes (heridas, objetos, lo que sabe cada uno), promesas y cabos sueltos.
+- **"Pulir al terminar cada capítulo"** (opción del perfil, apagada por defecto). Después de escribir, cada escena se reescribe una vez con las reglas de prosa, diálogo y tics de IA. Una escena pulida que quede por debajo del 60 % o por encima del 180 % del original se descarta y se conserva la original. Si el pulido falla se deja lo ya escrito. Cuesta el doble de llamadas.
+Costo: las reglas siempre activas pasaron a unos 17 000 caracteres (unos 4 200 tokens) por llamada con el oficio completo; para modelos pequeños queda el nivel "esencial".

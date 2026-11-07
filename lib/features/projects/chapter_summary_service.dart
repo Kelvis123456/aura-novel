@@ -13,6 +13,9 @@ class ChapterSummaryService {
   final ProjectRepository _repository;
   final SecureConfigStorage _storage;
 
+  /// Extra instructions for the recap (the summarization module). Null for a model with a small window.
+  final Future<String?> Function()? _guidance;
+
   static const maxInputChars = 16000;
   static const defaultMaxContextChars = 3000;
 
@@ -20,9 +23,11 @@ class ChapterSummaryService {
     required LlmClient client,
     required ProjectRepository repository,
     required SecureConfigStorage storage,
+    Future<String?> Function()? guidance,
   })  : _client = client,
         _repository = repository,
-        _storage = storage;
+        _storage = storage,
+        _guidance = guidance;
 
   /// Summarizes the chapter's latest saved version and stores the result.
   /// Returns null when the chapter has no text yet.
@@ -38,12 +43,13 @@ class ChapterSummaryService {
       ChatCompletionRequest(
         model: config.modelId,
         temperature: 0.3,
-        maxTokens: 300,
+        maxTokens: 450,
         messages: [
           ChatMessage.system(
-            'Resumes capítulos de una novela para que otro escritor retome la historia. '
-            'Resume en un solo párrafo de 4 a 6 frases: hechos clave, estado de los '
-            'personajes y cabos sueltos. Sin comentarios ni metatexto.',
+            'Resumes capítulos de una novela para que otro escritor retome la historia sin contradecirla. '
+            'Escribe un solo párrafo de 5 a 8 frases con los hechos clave, el estado de cada personaje '
+            '(heridas, objetos que lleva, lo que sabe y lo que ignora), las promesas y fechas mencionadas y los cabos sueltos. '
+            'Sin comentarios ni metatexto.${await _guidance?.call() == null ? '' : '\n\nPrincipios de resumen:\n${await _guidance!.call()}'}',
           ),
           ChatMessage.user('Capítulo "${chapter.title}":\n\n${clipMiddle(text, maxInputChars)}'),
         ],

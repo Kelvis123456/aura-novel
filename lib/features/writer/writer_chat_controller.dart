@@ -107,7 +107,7 @@ class WriterChatController extends ChangeNotifier {
   }
 
   /// Sends [text] in [mode]. [words] and [continueChapter] only matter for chapters.
-  Future<void> send(String text, ChatMode mode, {int words = 1500, bool continueChapter = true}) async {
+  Future<void> send(String text, ChatMode mode, {int words = 1500, bool continueChapter = true, bool deepResearch = true}) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || generating || _busyToken != null) return;
     final busy = Object();
@@ -124,7 +124,11 @@ class WriterChatController extends ChangeNotifier {
           ChatMode.research => 'research',
         },
         createdAt: DateTime.now(),
-        meta: mode == ChatMode.chapter ? {'words': words, 'continue': continueChapter} : const {},
+        meta: switch (mode) {
+          ChatMode.chapter => {'words': words, 'continue': continueChapter},
+          ChatMode.research => {'deep': deepResearch},
+          ChatMode.chat => const {},
+        },
       );
       entries = [...entries, user];
       error = null;
@@ -233,19 +237,53 @@ class WriterChatController extends ChangeNotifier {
     final answer = _newAnswer('chapter');
     final existing = continueChapter && chapter != null ? (await _repo.getLatestNodeForChapter(chapter!.id))?.content ?? '' : '';
     final context = await _context('${user.content}\n$existing');
-    final events = _chapterWriter.write(
-      instruction: user.content,
-      targetWords: words,
-      profile: profile,
-      context: context,
-      existingText: existing,
+    final events = _withPolish(
+      _chapterWriter.write(
+        instruction: user.content,
+        targetWords: words,
+        profile: profile,
+        context: context,
+        existingText: existing,
+      ),
     );
-    await _stream(answer, events.map((e) => e), onEvent: (e) {
+    await _stream(answer, events, onEvent: (e) {
       if (e is SegmentStarted) {
         progress = 'Escena ${e.index + 1} de ${e.total}';
         _notify();
+      } else if (e is PolishStarted) {
+        progress = 'Puliendo escena ${e.index + 1} de ${e.total}';
+        _notify();
       }
     });
+  }
+
+  /// Passes the chapter's events through and, when the profile asks for it, rewrites every scene
+  /// once afterwards. A scene the model polishes badly (or fails on) stays as it was written.
+  Stream<WriterEvent> _withPolish(Stream<WriterEvent> source) async* {
+    final polish = profile.polishAfter;
+    final scenes = <String>[];
+    WriterEvent? finished;
+    await for (final e in source) {
+      if (e is SceneDone) scenes.add(e.text);
+      if (e is WriterFinished) {
+        finished = e;
+        continue;
+      }
+      yield e;
+    }
+    if (polish && scenes.isNotEmpty) {
+      for (var i = 0; i < scenes.length; i++) {
+        yield PolishStarted(i, scenes.length);
+        try {
+          final better = await _service.polish(scenes[i], profile);
+          if (better != null) scenes[i] = better;
+        } on ApiClientException {
+          break; // keep what was written; the polish is a bonus
+        }
+        yield ProseReplace(scenes.join('\n\n'));
+      }
+    }
+    if (finished != null) yield finished;
   }
 
   Future<void> _research(ChatEntry user) async {
@@ -256,11 +294,20 @@ class WriterChatController extends ChangeNotifier {
     progress = 'Investigando…';
     _notify();
     try {
-      final text = await _service.research(
-        topic: user.content,
-        profile: profile,
-        storyContext: project == null ? '' : '${project!.title}. ${project!.synopsis}'.trim(),
-      );
+      final storyContext = project == null ? '' : '${project!.title}. ${project!.synopsis}'.trim();
+      final text = user.meta['deep'] == false
+          ? await _service.research(topic: user.content, profile: profile, storyContext: storyContext)
+          : await _service.researchDeep(
+              topic: user.content,
+              profile: profile,
+              storyContext: storyContext,
+              onProgress: (step) {
+                if (_active == token) {
+                  progress = step;
+                  _notify();
+                }
+              },
+            );
       if (_active != token) return; // stopped while waiting
       _setContent(answer, text);
       final saved = entries.where((e) => e.id == answer.id).firstOrNull;
@@ -409,6 +456,8 @@ class WriterChatController extends ChangeNotifier {
           text.write(item);
         } else if (item is ProseDelta) {
           text.write(item.text);
+        } else if (item is ProseReplace) {
+          text = StringBuffer(item.text);
         } else if (item is WriterEvent) {
           onEvent?.call(item);
         }
