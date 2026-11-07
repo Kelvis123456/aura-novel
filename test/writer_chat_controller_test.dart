@@ -186,7 +186,10 @@ void main() {
   test('parar una investigación y empezar otra petición no mezcla los estados', () async {
     holdResearch = Completer<void>();
     final research = controller.send('Lentes Fresnel', ChatMode.research, deepResearch: false);
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    // The turn is saved to SQLite before it starts, which is slow on a busy CI runner.
+    for (var i = 0; i < 100 && !controller.generating; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
     expect(controller.generating, isTrue);
 
     controller.stop();
