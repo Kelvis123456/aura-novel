@@ -10,10 +10,13 @@ import 'backup_service.dart';
 import 'branch_tree_viewer.dart';
 import 'editor_document_binding.dart';
 import 'export_dialog.dart';
+import 'map_screen.dart';
 import 'models/project_model.dart';
 import 'models/story_node_model.dart';
 import 'project_cards.dart';
 import 'project_controller.dart';
+import 'timeline_screen.dart';
+import 'wiki_export_service.dart';
 
 /// Entry point for project management: list projects → drill into a
 /// project's chapters → drill into a chapter's branching history
@@ -22,7 +25,8 @@ import 'project_controller.dart';
 class ProjectManagerScreen extends StatefulWidget {
   final Color accentColor;
 
-  const ProjectManagerScreen({super.key, this.accentColor = const Color(0xFFDC143C)});
+  const ProjectManagerScreen(
+      {super.key, this.accentColor = const Color(0xFFDC143C)});
 
   @override
   State<ProjectManagerScreen> createState() => _ProjectManagerScreenState();
@@ -35,7 +39,8 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
   void initState() {
     super.initState();
     final scope = AppScope.of(context);
-    _controller = ProjectController(repository: scope.projectRepository)..addListener(_onChanged);
+    _controller = ProjectController(repository: scope.projectRepository)
+      ..addListener(_onChanged);
     _controller.loadProjects();
   }
 
@@ -59,7 +64,8 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
 
   Future<void> _restoreBackup() async {
     final service = AppScope.of(context).backupService;
-    final picked = await FilePicker.platform.pickFiles(type: FileType.any, withData: true);
+    final picked =
+        await FilePicker.platform.pickFiles(type: FileType.any, withData: true);
     final bytes = picked?.files.single.bytes;
     if (bytes == null) return;
 
@@ -75,7 +81,8 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
     } on FormatException {
       _showMessage('El archivo no se pudo leer como texto.');
     } catch (_) {
-      _showMessage('No se pudo restaurar la copia. No se cambió nada en los datos dañados.');
+      _showMessage(
+          'No se pudo restaurar la copia. No se cambió nada en los datos dañados.');
     }
   }
 
@@ -101,7 +108,8 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1A0B12),
-        title: const Text('Nuevo proyecto', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Nuevo proyecto', style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -109,21 +117,26 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
               controller: titleController,
               autofocus: true,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Título', labelStyle: TextStyle(color: Colors.white54)),
+              decoration: const InputDecoration(
+                  labelText: 'Título',
+                  labelStyle: TextStyle(color: Colors.white54)),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: synopsisController,
               maxLines: 3,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Sinopsis', labelStyle: TextStyle(color: Colors.white54)),
+              decoration: const InputDecoration(
+                  labelText: 'Sinopsis',
+                  labelStyle: TextStyle(color: Colors.white54)),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -143,7 +156,8 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1A0B12),
-        title: Text('¿Eliminar "${project.title}"?', style: const TextStyle(color: Colors.white, fontSize: 16)),
+        title: Text('¿Eliminar "${project.title}"?',
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
         content: const Text(
           'Se eliminarán también todos sus capítulos y versiones guardadas. Esta acción no se puede deshacer.',
           style: TextStyle(color: Colors.white60),
@@ -151,11 +165,13 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Eliminar',
+                style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -178,10 +194,14 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
             icon: const Icon(Icons.more_vert),
             tooltip: 'Copia de seguridad',
             color: const Color(0xFF1A0B12),
-            onSelected: (value) => value == 'export' ? _exportBackup() : _restoreBackup(),
+            onSelected: (value) =>
+                value == 'export' ? _exportBackup() : _restoreBackup(),
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'export', child: Text('Exportar copia de seguridad')),
-              PopupMenuItem(value: 'restore', child: Text('Restaurar copia de seguridad')),
+              PopupMenuItem(
+                  value: 'export', child: Text('Exportar copia de seguridad')),
+              PopupMenuItem(
+                  value: 'restore',
+                  child: Text('Restaurar copia de seguridad')),
             ],
           ),
         ],
@@ -217,7 +237,10 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
                         accent: accent,
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => _ChapterListScreen(project: project, controller: _controller, accent: accent),
+                            builder: (_) => _ChapterListScreen(
+                                project: project,
+                                controller: _controller,
+                                accent: accent),
                           ),
                         ),
                         onDelete: () => _confirmDeleteProject(project),
@@ -239,7 +262,8 @@ class _ChapterListScreen extends StatefulWidget {
   final ProjectController controller;
   final Color accent;
 
-  const _ChapterListScreen({required this.project, required this.controller, required this.accent});
+  const _ChapterListScreen(
+      {required this.project, required this.controller, required this.accent});
 
   @override
   State<_ChapterListScreen> createState() => _ChapterListScreenState();
@@ -273,17 +297,21 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1A0B12),
-        title: const Text('Nuevo capítulo', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Nuevo capítulo', style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: titleController,
           autofocus: true,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(labelText: 'Título', labelStyle: TextStyle(color: Colors.white54)),
+          decoration: const InputDecoration(
+              labelText: 'Título',
+              labelStyle: TextStyle(color: Colors.white54)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -295,7 +323,8 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     );
 
     if (saved == true && titleController.text.trim().isNotEmpty) {
-      await widget.controller.createChapter(projectId: widget.project.id, title: titleController.text.trim());
+      await widget.controller.createChapter(
+          projectId: widget.project.id, title: titleController.text.trim());
       await _load();
     }
   }
@@ -304,19 +333,146 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final service = AppScope.of(context).chapterSummaryService;
     messenger.showSnackBar(
-      const SnackBar(content: Text('Resumiendo capítulo…'), behavior: SnackBarBehavior.floating),
+      const SnackBar(
+          content: Text('Resumiendo capítulo…'),
+          behavior: SnackBarBehavior.floating),
     );
     String message;
     try {
       final summary = await service.summarize(chapter);
-      message = summary == null ? 'El capítulo no tiene texto todavía.' : 'Resumen guardado.';
+      message = summary == null
+          ? 'El capítulo no tiene texto todavía.'
+          : 'Resumen guardado.';
     } on ApiClientException catch (e) {
       message = e.message;
     }
     messenger
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+      ..showSnackBar(SnackBar(
+          content: Text(message), behavior: SnackBarBehavior.floating));
     if (mounted) await _load();
+  }
+
+  Future<void> _exportWiki() async {
+    final scope = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    int? upTo;
+    final choice = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A0B12),
+          title: const Text('Exportar wiki',
+              style: TextStyle(color: Colors.white, fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Incluye los personajes y el lore de este proyecto y los del universo compartido.',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int?>(
+                initialValue: upTo,
+                isExpanded: true,
+                dropdownColor: const Color(0xFF1A0B12),
+                decoration: const InputDecoration(labelText: 'Mostrar hasta'),
+                items: [
+                  const DropdownMenuItem<int?>(
+                      value: null, child: Text('Todo el libro')),
+                  for (var i = 0; i < _chapters.length; i++)
+                    DropdownMenuItem<int?>(
+                        value: i + 1,
+                        child: Text('Capítulo ${i + 1}: ${_chapters[i].title}',
+                            overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: (value) => setDialogState(() => upTo = value),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: widget.accent),
+              child: const Text('Exportar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice != true) return;
+
+    final files = WikiExportService.buildFiles(
+      project: widget.project,
+      chapters: _chapters,
+      characters: await scope.loreRepository.getAllCharacters(),
+      loreItems: await scope.loreRepository.getAllLoreItems(),
+      events:
+          await scope.projectRepository.getTimelineEvents(widget.project.id),
+      upToChapter: upTo,
+    );
+    try {
+      await WikiExportService().exportAndShare(files, widget.project.title);
+    } on Exception catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text('No se pudo exportar la wiki: $e'),
+          behavior: SnackBarBehavior.floating));
+    }
+  }
+
+  Future<void> _checkConsistency(ChapterModel chapter) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = AppScope.of(context).consistencyService;
+    messenger.showSnackBar(
+      const SnackBar(
+          content: Text('Revisando coherencia…'),
+          behavior: SnackBarBehavior.floating),
+    );
+    List<String>? issues;
+    String? error;
+    try {
+      issues = await service.check(chapter);
+    } on ApiClientException catch (e) {
+      error = e.message;
+    }
+    messenger.hideCurrentSnackBar();
+    if (!mounted) return;
+    if (error != null || issues == null) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(error ?? 'El capítulo no tiene texto todavía.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    final found = issues;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1A0B12),
+        title: Text('Coherencia: ${chapter.title}',
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
+        content: SingleChildScrollView(
+          child: Text(
+            found.isEmpty
+                ? 'No encontré contradicciones con tus fichas ni con los capítulos anteriores.'
+                : found.map((i) => '• $i').join('\n\n'),
+            style: const TextStyle(color: Colors.white70),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child:
+                const Text('Cerrar', style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _confirmDeleteChapter(ChapterModel chapter) async {
@@ -324,16 +480,21 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1A0B12),
-        title: Text('¿Eliminar "${chapter.title}"?', style: const TextStyle(color: Colors.white, fontSize: 16)),
-        content: const Text('Se eliminarán también todas sus versiones guardadas.', style: TextStyle(color: Colors.white60)),
+        title: Text('¿Eliminar "${chapter.title}"?',
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Text(
+            'Se eliminarán también todas sus versiones guardadas.',
+            style: TextStyle(color: Colors.white60)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Eliminar',
+                style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -355,6 +516,32 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
         elevation: 0,
         title: Text(widget.project.title, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.map_outlined),
+            tooltip: 'Mapa',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => MapScreen(
+                      project: widget.project, accent: widget.accent)),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.public),
+            tooltip: 'Exportar wiki',
+            onPressed: _exportWiki,
+          ),
+          IconButton(
+            icon: const Icon(Icons.timeline),
+            tooltip: 'Línea de tiempo',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TimelineScreen(
+                    project: widget.project,
+                    chapters: _chapters,
+                    accent: widget.accent),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.ios_share),
             tooltip: 'Exportar proyecto',
@@ -411,6 +598,7 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
                         ),
                         onDelete: () => _confirmDeleteChapter(chapter),
                         onSummarize: () => _summarize(chapter),
+                        onCheckConsistency: () => _checkConsistency(chapter),
                       );
                     },
                   ),
@@ -463,7 +651,8 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
   }
 
   Future<void> _startFirstVersion() async {
-    final node = await widget.controller.saveVersion(chapterId: widget.chapter.id, content: '');
+    final node = await widget.controller
+        .saveVersion(chapterId: widget.chapter.id, content: '');
     await _load();
     if (mounted) _openInEditor(node);
   }
@@ -490,19 +679,22 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: const Color(0xFF0D0508),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: Icon(Icons.edit_outlined, color: widget.accent),
-              title: const Text('Abrir en el editor', style: TextStyle(color: Colors.white)),
+              title: const Text('Abrir en el editor',
+                  style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(sheetContext).pop('open'),
             ),
             ListTile(
               leading: Icon(Icons.call_split, color: widget.accent),
-              title: const Text('Crear rama desde aquí', style: TextStyle(color: Colors.white)),
+              title: const Text('Crear rama desde aquí',
+                  style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(sheetContext).pop('branch'),
             ),
           ],
@@ -540,7 +732,8 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -553,7 +746,8 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
 
     if (saved != true || nameController.text.trim().isEmpty) return;
 
-    final branch = await widget.controller.createBranch(fromNode: node, branchName: nameController.text.trim());
+    final branch = await widget.controller
+        .createBranch(fromNode: node, branchName: nameController.text.trim());
     await _load();
     if (mounted) _openInEditor(branch);
   }

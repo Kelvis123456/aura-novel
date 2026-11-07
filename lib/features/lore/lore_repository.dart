@@ -10,7 +10,7 @@ import 'models/lore_item_model.dart';
 /// `Database` instance is opened lazily and reused for the app's lifetime.
 class LoreRepository {
   static const _dbFileName = 'aura_lore.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 3;
   static final _random = Random();
 
   final String? _databasePath;
@@ -37,7 +37,9 @@ class LoreRepository {
             motivation TEXT NOT NULL DEFAULT '',
             secrets_limits TEXT NOT NULL DEFAULT '',
             relationships TEXT NOT NULL DEFAULT '[]',
-            force_include INTEGER NOT NULL DEFAULT 0
+            force_include INTEGER NOT NULL DEFAULT 0,
+            visible_from_chapter INTEGER NOT NULL DEFAULT 0,
+            project_id TEXT
           )
         ''');
         await db.execute('''
@@ -48,9 +50,24 @@ class LoreRepository {
             short_description TEXT NOT NULL DEFAULT '',
             long_details TEXT NOT NULL DEFAULT '',
             tags TEXT NOT NULL DEFAULT '[]',
-            force_include INTEGER NOT NULL DEFAULT 0
+            force_include INTEGER NOT NULL DEFAULT 0,
+            visible_from_chapter INTEGER NOT NULL DEFAULT 0,
+            project_id TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          for (final table in const ['characters', 'lore_items']) {
+            await db.execute('ALTER TABLE $table ADD COLUMN visible_from_chapter INTEGER NOT NULL DEFAULT 0');
+          }
+        }
+        if (oldVersion < 3) {
+          // Existing entries stay shared (NULL) so nothing disappears from any project.
+          for (final table in const ['characters', 'lore_items']) {
+            await db.execute('ALTER TABLE $table ADD COLUMN project_id TEXT');
+          }
+        }
       },
     );
   }

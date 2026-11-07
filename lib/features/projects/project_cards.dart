@@ -74,6 +74,7 @@ class ChapterCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback onSummarize;
+  final VoidCallback onCheckConsistency;
 
   const ChapterCard({
     super.key,
@@ -82,6 +83,7 @@ class ChapterCard extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
     required this.onSummarize,
+    required this.onCheckConsistency,
   });
 
   @override
@@ -137,6 +139,11 @@ class ChapterCard extends StatelessWidget {
                   icon: Icon(Icons.notes, size: 18, color: chapter.summary.isEmpty ? Colors.white38 : accent),
                   tooltip: chapter.summary.isEmpty ? 'Resumir con IA' : 'Actualizar resumen',
                   onPressed: onSummarize,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.fact_check_outlined, size: 18, color: Colors.white38),
+                  tooltip: 'Revisar coherencia',
+                  onPressed: onCheckConsistency,
                 ),
                 const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
                 IconButton(

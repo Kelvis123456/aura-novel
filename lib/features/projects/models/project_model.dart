@@ -1,3 +1,5 @@
+import 'fantasy_calendar_model.dart';
+
 /// A novel-length writing project — the top-level container for chapters.
 class ProjectModel {
   final String id;
@@ -6,20 +8,30 @@ class ProjectModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// The world's own calendar, if the author defined one.
+  final FantasyCalendar? calendar;
+
+  /// Local path of the map image, empty when none. The path travels in the JSON backup but the image file does not.
+  final String mapPath;
+
   const ProjectModel({
     required this.id,
     required this.title,
     this.synopsis = '',
     required this.createdAt,
     required this.updatedAt,
+    this.calendar,
+    this.mapPath = '',
   });
 
-  ProjectModel copyWith({String? title, String? synopsis, DateTime? updatedAt}) => ProjectModel(
+  ProjectModel copyWith({String? title, String? synopsis, DateTime? updatedAt, FantasyCalendar? calendar, bool clearCalendar = false, String? mapPath}) => ProjectModel(
         id: id,
         title: title ?? this.title,
         synopsis: synopsis ?? this.synopsis,
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        calendar: clearCalendar ? null : (calendar ?? this.calendar),
+        mapPath: mapPath ?? this.mapPath,
       );
 
   Map<String, dynamic> toMap() => {
@@ -28,6 +40,8 @@ class ProjectModel {
         'synopsis': synopsis,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
+        'calendar': calendar?.toJsonString() ?? '',
+        'map_path': mapPath,
       };
 
   factory ProjectModel.fromMap(Map<String, dynamic> map) => ProjectModel(
@@ -36,6 +50,8 @@ class ProjectModel {
         synopsis: map['synopsis'] as String? ?? '',
         createdAt: DateTime.parse(map['created_at'] as String),
         updatedAt: DateTime.parse(map['updated_at'] as String),
+        calendar: FantasyCalendar.fromJsonString(map['calendar'] as String?),
+        mapPath: map['map_path'] as String? ?? '',
       );
 }
 

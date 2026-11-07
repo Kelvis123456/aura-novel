@@ -35,6 +35,12 @@ class CharacterModel {
   /// whether the character is mentioned in the recent text.
   final bool forceInclude;
 
+  /// Chapter number (1-based) from which the public wiki shows this entry; 0 = always.
+  final int visibleFromChapter;
+
+  /// Project this entry belongs to; null = shared universe, visible in every project.
+  final String? projectId;
+
   const CharacterModel({
     required this.id,
     required this.name,
@@ -45,7 +51,11 @@ class CharacterModel {
     this.secretsLimits = '',
     this.relationships = const [],
     this.forceInclude = false,
+    this.visibleFromChapter = 0,
+    this.projectId,
   });
+
+  bool appliesTo(String? currentProjectId) => projectId == null || projectId == currentProjectId;
 
   CharacterModel copyWith({
     String? name,
@@ -56,6 +66,9 @@ class CharacterModel {
     String? secretsLimits,
     List<CharacterRelationship>? relationships,
     bool? forceInclude,
+    int? visibleFromChapter,
+    String? projectId,
+    bool clearProject = false,
   }) {
     return CharacterModel(
       id: id,
@@ -67,6 +80,8 @@ class CharacterModel {
       secretsLimits: secretsLimits ?? this.secretsLimits,
       relationships: relationships ?? this.relationships,
       forceInclude: forceInclude ?? this.forceInclude,
+      visibleFromChapter: visibleFromChapter ?? this.visibleFromChapter,
+      projectId: clearProject ? null : (projectId ?? this.projectId),
     );
   }
 
@@ -80,6 +95,8 @@ class CharacterModel {
         'secrets_limits': secretsLimits,
         'relationships': jsonEncode(relationships.map((r) => r.toJson()).toList()),
         'force_include': forceInclude ? 1 : 0,
+        'visible_from_chapter': visibleFromChapter,
+        'project_id': projectId,
       };
 
   factory CharacterModel.fromMap(Map<String, dynamic> map) {
@@ -107,6 +124,8 @@ class CharacterModel {
       secretsLimits: map['secrets_limits'] as String? ?? '',
       relationships: decodeRelationships(map['relationships']),
       forceInclude: (map['force_include'] as int? ?? 0) == 1,
+      visibleFromChapter: map['visible_from_chapter'] as int? ?? 0,
+      projectId: map['project_id'] as String?,
     );
   }
 }

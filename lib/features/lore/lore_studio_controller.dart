@@ -22,6 +22,17 @@ class LoreStudioController extends ChangeNotifier {
   List<CharacterModel> characters = [];
   List<LoreItemModel> loreItems = [];
 
+  /// Project the studio was opened from; entries of other projects are hidden unless [showAll].
+  String? scopeProjectId;
+  bool showAll = false;
+
+  bool _inScope(String? entryProjectId) => showAll || entryProjectId == null || entryProjectId == scopeProjectId;
+
+  void setShowAll(bool value) {
+    showAll = value;
+    notifyListeners();
+  }
+
   String searchQuery = '';
   LoreCategory? categoryFilter;
 
@@ -36,14 +47,15 @@ class LoreStudioController extends ChangeNotifier {
 
   List<CharacterModel> get filteredCharacters {
     final q = searchQuery.trim().toLowerCase();
-    if (q.isEmpty) return characters;
-    return characters
+    final scoped = characters.where((c) => _inScope(c.projectId)).toList();
+    if (q.isEmpty) return scoped;
+    return scoped
         .where((c) => c.name.toLowerCase().contains(q) || c.aliases.any((a) => a.toLowerCase().contains(q)))
         .toList();
   }
 
   List<LoreItemModel> get filteredLoreItems {
-    var items = loreItems;
+    var items = loreItems.where((l) => _inScope(l.projectId)).toList();
     if (categoryFilter != null) {
       items = items.where((l) => l.category == categoryFilter).toList();
     }

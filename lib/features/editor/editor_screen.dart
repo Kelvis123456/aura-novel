@@ -61,6 +61,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       client: scope.apiClient,
       storage: scope.configStorage,
       contextBuilder: scope.contextBuilder,
+      projectId: widget.documentBinding?.projectId,
       storyContext: widget.documentBinding == null
           ? null
           : (maxChars) => scope.chapterSummaryService.buildPriorSummariesMessage(
@@ -452,7 +453,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => LoreStudioScreen(accentColor: accent)),
+                  MaterialPageRoute(builder: (_) => LoreStudioScreen(accentColor: accent, projectId: _binding?.projectId)),
                 );
               },
             ),
