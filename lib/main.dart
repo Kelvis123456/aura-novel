@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/app_scope.dart';
+import 'core/theme/aura_theme.dart';
 import 'core/network/dynamic_openai_client.dart';
 import 'core/storage/secure_config_storage.dart';
 import 'features/editor/editor_screen.dart';
@@ -81,9 +82,9 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       child: MaterialApp(
         title: 'AURA NOVEL',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark(useMaterial3: true).copyWith(
-          scaffoldBackgroundColor: const Color(0xFF000000),
-        ),
+        theme: AuraTheme.light,
+        darkTheme: AuraTheme.dark,
+        themeMode: ThemeMode.system,
         home: const EditorScreen(),
       ),
     );
