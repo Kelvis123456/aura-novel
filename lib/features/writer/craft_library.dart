@@ -37,6 +37,7 @@ class CraftLibrary {
     CraftModule('key-moments', 'Momentos clave', 'Construye la historia desde sus momentos emocionales.', CraftGroup.estructura),
     CraftModule('drafting', 'Primer borrador', 'Desbloquea y avanza sin pulir.', CraftGroup.estructura),
     CraftModule('revision', 'Revisión', 'Pasada de edición ordenada.', CraftGroup.estructura),
+    CraftModule('margin-notes', 'Notas al margen', 'Comentarios de editor anclados a frases exactas, sin reescribir.', CraftGroup.estructura),
     CraftModule('endings', 'Finales', 'Cierres que se ganan lo que prometen.', CraftGroup.estructura),
     CraftModule('story-analysis', 'Analizar texto', 'Fortalezas y debilidades de un capítulo.', CraftGroup.estructura),
     CraftModule('story-sense', 'Qué necesita la historia', 'Diagnóstico general de la historia.', CraftGroup.estructura),
