@@ -29,10 +29,11 @@ class _WritingProfileSheetState extends State<WritingProfileSheet> {
   late final _tone = TextEditingController(text: _p.tone);
   late final _references = TextEditingController(text: _p.references);
   late final _directions = TextEditingController(text: _p.directions);
+  late final _voice = TextEditingController(text: _p.voiceSample);
 
   @override
   void dispose() {
-    for (final c in [_genre, _tone, _references, _directions]) {
+    for (final c in [_genre, _tone, _references, _directions, _voice]) {
       c.dispose();
     }
     super.dispose();
@@ -44,6 +45,7 @@ class _WritingProfileSheetState extends State<WritingProfileSheet> {
       tone: _tone.text.trim(),
       references: _references.text.trim(),
       directions: _directions.text.trim(),
+      voiceSample: _voice.text.trim(),
     ));
   }
 
@@ -108,6 +110,15 @@ class _WritingProfileSheetState extends State<WritingProfileSheet> {
               controller: _directions,
               maxLines: 4,
               decoration: const InputDecoration(labelText: 'Indicaciones fijas', hintText: 'lo que siempre debe hacer o evitar'),
+            ),
+            TextField(
+              controller: _voice,
+              maxLines: 6,
+              maxLength: WritingProfile.maxVoiceChars,
+              decoration: const InputDecoration(
+                labelText: 'Tu voz',
+                hintText: 'Pega unas páginas tuyas y el asistente imitará tu ritmo y tu manera de decir las cosas',
+              ),
             ),
             const SizedBox(height: 12),
             SwitchListTile(
