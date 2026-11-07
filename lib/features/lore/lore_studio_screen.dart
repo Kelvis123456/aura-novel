@@ -349,7 +349,7 @@ class _CharacterCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   character.name,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: context.aura.text, fontWeight: FontWeight.w600, fontSize: 14),
                 ),
