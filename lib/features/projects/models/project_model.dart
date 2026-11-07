@@ -75,21 +75,36 @@ class ChapterModel {
   /// so a long novel doesn't have to fit in the prompt. Empty until generated.
   final String summary;
 
+  /// Where the chapter stands on the story board: idea, borrador, revision or listo.
+  final String status;
+
+  /// Plot threads the chapter advances ("el faro", "la herencia"), for filtering the board.
+  final List<String> threads;
+
+  static const statuses = ['idea', 'borrador', 'revision', 'listo'];
+
   const ChapterModel({
     required this.id,
     required this.projectId,
     required this.title,
     required this.order,
     this.summary = '',
+    this.status = 'borrador',
+    this.threads = const [],
   });
 
-  ChapterModel copyWith({String? title, int? order, String? summary}) => ChapterModel(
+  ChapterModel copyWith({String? title, int? order, String? summary, String? status, List<String>? threads}) => ChapterModel(
         id: id,
         projectId: projectId,
         title: title ?? this.title,
         order: order ?? this.order,
         summary: summary ?? this.summary,
+        status: status ?? this.status,
+        threads: threads ?? this.threads,
       );
+
+  static String joinThreads(List<String> threads) => threads.map((t) => t.trim()).where((t) => t.isNotEmpty).join('|');
+  static List<String> splitThreads(String? raw) => (raw ?? '').split('|').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -97,6 +112,8 @@ class ChapterModel {
         'title': title,
         'order_index': order,
         'summary': summary,
+        'status': status,
+        'threads': joinThreads(threads),
       };
 
   factory ChapterModel.fromMap(Map<String, dynamic> map) => ChapterModel(
@@ -105,5 +122,7 @@ class ChapterModel {
         title: map['title'] as String? ?? '',
         order: map['order_index'] as int? ?? 0,
         summary: map['summary'] as String? ?? '',
+        status: statuses.contains(map['status']) ? map['status'] as String : 'borrador',
+        threads: splitThreads(map['threads'] as String?),
       );
 }

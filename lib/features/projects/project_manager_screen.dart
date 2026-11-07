@@ -16,6 +16,7 @@ import 'models/story_node_model.dart';
 import 'project_cards.dart';
 import 'project_controller.dart';
 import '../writer/diff_review_sheet.dart';
+import 'board_screen.dart';
 import 'timeline_screen.dart';
 import 'wiki_export_service.dart';
 import '../../core/theme/aura_theme.dart';
@@ -529,6 +530,13 @@ class _ChapterListScreenState extends State<_ChapterListScreen> {
         elevation: 0,
         title: Text(widget.project.title, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.view_kanban_outlined),
+            tooltip: 'Tablero',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BoardScreen(project: widget.project, accent: widget.accent)),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.map_outlined),
             tooltip: 'Mapa',

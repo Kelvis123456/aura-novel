@@ -113,6 +113,7 @@ void main() {
     final path = p.join(tempDir.path, 'v7.db');
     final old = await openDatabase(path, version: 7, onCreate: (db, _) async {
       await db.execute("CREATE TABLE projects (id TEXT PRIMARY KEY, title TEXT NOT NULL, synopsis TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, calendar TEXT NOT NULL DEFAULT '', map_path TEXT NOT NULL DEFAULT '', writing_profile TEXT NOT NULL DEFAULT '')");
+      await db.execute("CREATE TABLE chapters (id TEXT PRIMARY KEY, project_id TEXT NOT NULL, title TEXT NOT NULL, order_index INTEGER NOT NULL DEFAULT 0, summary TEXT NOT NULL DEFAULT '')");
       await db.execute("CREATE TABLE chat_messages (id TEXT PRIMARY KEY, project_id TEXT, role TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL DEFAULT 'chat', created_at TEXT NOT NULL)");
       await db.insert('chat_messages', {'id': 'm', 'role': 'user', 'content': 'hola', 'created_at': '2026-01-01T00:00:00'});
     });
