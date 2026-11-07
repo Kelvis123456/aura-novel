@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../lore/lore_repository.dart';
 import 'models/project_model.dart';
 import 'models/story_node_model.dart';
 import 'project_repository.dart';
@@ -9,12 +10,13 @@ import 'project_repository.dart';
 /// [BranchTreeViewer].
 class ProjectController extends ChangeNotifier {
   final ProjectRepository repository;
+  final LoreRepository? lore;
   final bool _ownsRepository;
 
   /// [repository] is normally the shared instance from [AppScope] — pass
   /// none to let this controller open (and own) its own database, e.g. in
   /// isolated tests.
-  ProjectController({ProjectRepository? repository})
+  ProjectController({ProjectRepository? repository, this.lore})
       : repository = repository ?? ProjectRepository(),
         _ownsRepository = repository == null;
 
@@ -52,6 +54,7 @@ class ProjectController extends ChangeNotifier {
 
   Future<void> deleteProject(String id) async {
     await repository.deleteProjectCascade(id);
+    await lore?.deleteForProject(id);
     await loadProjects();
   }
 

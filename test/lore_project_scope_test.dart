@@ -54,6 +54,19 @@ void main() {
       expect(scratch, allOf(contains('Aldric'), isNot(contains('Brenna')), isNot(contains('Cormac'))));
     });
 
+    test('deleteForProject borra las fichas del proyecto y deja las de otros y las compartidas', () async {
+      for (final c in [shared, inA, inB]) {
+        await repo.saveCharacter(c);
+      }
+      await repo.saveLoreItem(const LoreItemModel(id: 'la', name: 'Torre A', category: LoreCategory.location, projectId: 'A'));
+      await repo.saveLoreItem(const LoreItemModel(id: 'lb', name: 'Torre B', category: LoreCategory.location, projectId: 'B'));
+
+      await repo.deleteForProject('A');
+
+      expect((await repo.getAllCharacters()).map((c) => c.id), unorderedEquals(['s', 'b']));
+      expect((await repo.getAllLoreItems()).map((l) => l.id), ['lb']);
+    });
+
     test('projectId se guarda y se lee', () async {
       await repo.saveLoreItem(const LoreItemModel(id: 'l', name: 'Torre', category: LoreCategory.location, projectId: 'A'));
       expect((await repo.getLoreItem('l'))!.projectId, 'A');

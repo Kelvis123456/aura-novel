@@ -42,7 +42,7 @@ class _ProjectManagerScreenState extends State<ProjectManagerScreen> {
   void initState() {
     super.initState();
     final scope = AppScope.of(context);
-    _controller = ProjectController(repository: scope.projectRepository)
+    _controller = ProjectController(repository: scope.projectRepository, lore: scope.loreRepository)
       ..addListener(_onChanged);
     _controller.loadProjects();
   }
