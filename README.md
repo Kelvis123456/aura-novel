@@ -2,7 +2,9 @@
 
 App móvil (Flutter, Android) para escribir novelas con ayuda de una IA. Hice la app para escribir en el celular sin depender de un servicio con suscripción: tú pones tu propia API key y el modelo que quieras.
 
-![Editor](docs/screenshots/01-home.png) ![Menú](docs/screenshots/02-menu.png) ![Ajustes de API](docs/screenshots/03-api.png)
+![Escribir](docs/screenshots/01-escribir.png) ![Asistente](docs/screenshots/02-asistente.png) ![Mundo](docs/screenshots/03-mundo.png) ![Proyectos](docs/screenshots/04-proyectos.png)
+
+Las capturas son del emulador de Android con un proyecto de ejemplo (el texto de la novela de muestra lo escribí yo para la demo).
 
 ## Qué hace
 
