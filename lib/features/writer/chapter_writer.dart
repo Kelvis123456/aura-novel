@@ -165,7 +165,7 @@ class ChapterWriter {
         segment.write(text);
         yield ProseDelta(text);
       }
-      if (segment.isEmpty) throw const MalformedResponseException('The model returned no text for a scene.');
+      if (segment.isEmpty) throw const MalformedResponseException('El modelo no devolvió texto para una escena.');
       written += segment.toString();
       newWords += countWords(segment.toString());
     }
@@ -201,7 +201,7 @@ class ChapterWriter {
       ),
     );
     final beats = parsePlan(response.content);
-    if (beats.isEmpty) throw const MalformedResponseException('The model returned an unreadable scene plan.');
+    if (beats.isEmpty) throw const MalformedResponseException('El modelo devolvió un plan de escenas ilegible.');
     // A model that returns too many or too few still gives a usable plan.
     return beats.length > maxScenes ? beats.sublist(0, maxScenes) : beats;
   }

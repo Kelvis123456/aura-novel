@@ -111,6 +111,7 @@ class WriterChatController extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     entries = [...entries, user];
+    error = null;
     await _repo.saveChatEntry(user);
     await _respond(user, mode, words: words, continueChapter: continueChapter);
   }
@@ -118,6 +119,7 @@ class WriterChatController extends ChangeNotifier {
   /// Drops the last assistant answer and asks again.
   Future<void> regenerate() async {
     if (generating || entries.isEmpty) return;
+    error = null;
     var lastUser = entries.lastIndexWhere((e) => e.role == ChatRole.user);
     if (lastUser < 0) return;
     for (final e in entries.sublist(lastUser + 1)) {

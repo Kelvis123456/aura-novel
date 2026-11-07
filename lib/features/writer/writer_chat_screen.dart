@@ -352,6 +352,8 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
           Icon(Icons.error_outline, size: 18, color: c.danger),
           const SizedBox(width: 10),
           Expanded(child: Text(_controller.error!, style: TextStyle(color: c.danger, fontSize: 13))),
+          if (_controller.entries.isNotEmpty && _controller.entries.last.role == ChatRole.user)
+            TextButton(onPressed: _controller.generating ? null : _controller.regenerate, child: const Text('Reintentar')),
         ],
       ),
     );
@@ -380,7 +382,7 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
-                        label: Text(label),
+                        label: Text(label, style: TextStyle(color: c.text)),
                         selected: _mode == mode,
                         onSelected: (_) => setState(() => _mode = mode),
                         selectedColor: c.accent.withValues(alpha: 0.2),
@@ -394,7 +396,7 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ChoiceChip(
-                          label: Text('$w'),
+                          label: Text('$w', style: TextStyle(color: c.text)),
                           selected: _words == w,
                           onSelected: (_) => setState(() => _words = w),
                           selectedColor: c.surfaceHigh,
@@ -406,7 +408,7 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
                     if (ctl.chapter != null) ...[
                       const SizedBox(width: 8),
                       FilterChip(
-                        label: const Text('Seguir el texto'),
+                        label: Text('Seguir el texto', style: TextStyle(color: c.text)),
                         selected: _continueChapter,
                         onSelected: (v) => setState(() => _continueChapter = v),
                         showCheckmark: false,

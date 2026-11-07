@@ -51,7 +51,7 @@ class ChapterSummaryService {
     );
 
     final summary = response.content.trim();
-    if (summary.isEmpty) throw const MalformedResponseException('The model returned an empty summary.');
+    if (summary.isEmpty) throw const MalformedResponseException('El modelo devolvió un resumen vacío.');
     await _repository.updateChapterSummary(chapter.id, summary);
     return summary;
   }

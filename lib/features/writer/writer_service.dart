@@ -144,7 +144,7 @@ class WriterService {
       ),
     );
     final text = response.content.trim();
-    if (text.isEmpty) throw const MalformedResponseException('The model returned an empty research note.');
+    if (text.isEmpty) throw const MalformedResponseException('El modelo devolvió una nota de investigación vacía.');
     return text;
   }
 }
