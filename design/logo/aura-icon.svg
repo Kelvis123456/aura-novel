@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect id="bg" width="512" height="512" rx="112" fill="#110C09"/>
-  <g id="icon">
-    <circle cx="256" cy="256" r="180" fill="none" stroke="#D86258" stroke-width="26"/>
-    <path fill="#EFEBE2" d="M256 108 L352 378 Q256 342 160 378 Z"/>
-    <circle cx="256" cy="262" r="23" fill="#110C09"/>
-    <path fill="#110C09" d="M247 262 L265 262 L262 352 L250 352 Z"/>
-  </g>
+<rect id="bg" width="512" height="512" rx="112" fill="#110C09"/>
+<g id="icon">
+<circle cx="256" cy="244" r="178" fill="none" stroke="#D86258" stroke-width="26"/>
+<path fill="#EFEBE2" d="M256 104 L328 300 Q256 276 184 300 Z"/>
+<circle cx="256" cy="214" r="18" fill="#110C09"/>
+<path fill="#110C09" d="M248 214 L264 214 L261 280 L251 280 Z"/>
+<path fill="#110C09" d="M64 360 Q160 330 256 372 Q352 330 448 360 L448 448 L64 448 Z"/>
+<path fill="#EFEBE2" d="M92 372 Q168 350 256 388 Q344 350 420 372 L420 424 Q344 402 256 438 Q168 402 92 424 Z"/>
+</g>
 </svg>
