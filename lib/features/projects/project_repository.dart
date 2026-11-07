@@ -16,7 +16,7 @@ import 'models/timeline_event_model.dart';
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 8;
+  static const _dbVersion = 9;
   static final _random = Random();
 
   final String? _databasePath;
@@ -68,6 +68,7 @@ class ProjectRepository {
         await _createTimelineTable(db);
         await _createMapPinsTable(db);
         await _createChatTable(db);
+        await _createWritingLogTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // One block per version, so a DB two versions behind runs both.
@@ -90,6 +91,9 @@ class ProjectRepository {
         if (oldVersion < 7) {
           await db.execute("ALTER TABLE projects ADD COLUMN writing_profile TEXT NOT NULL DEFAULT ''");
           await _createChatTable(db);
+        }
+        if (oldVersion < 9) {
+          await _createWritingLogTable(db);
         }
         if (oldVersion == 7) {
           // v7 builds made before the `meta` column existed.
@@ -130,6 +134,39 @@ class ProjectRepository {
       lore_item_id TEXT
     )
   ''');
+
+  Future<void> _createWritingLogTable(Database db) async {
+    await db.execute('CREATE TABLE writing_log (day TEXT PRIMARY KEY, words INTEGER NOT NULL)');
+    await db.execute('CREATE TABLE app_prefs (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+  }
+
+  /// Adds [words] (never negative) to the count for [day] (`yyyy-mm-dd`).
+  Future<void> addWords(String day, int words) async {
+    if (words <= 0) return;
+    final db = await _database;
+    await db.rawInsert(
+      'INSERT INTO writing_log (day, words) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET words = words + excluded.words',
+      [day, words],
+    );
+  }
+
+  /// Words per day for the last [days] days (only days with writing appear).
+  Future<Map<String, int>> getWritingLog({int days = 400}) async {
+    final db = await _database;
+    final rows = await db.query('writing_log', orderBy: 'day DESC', limit: days);
+    return {for (final r in rows) r['day'] as String: r['words'] as int};
+  }
+
+  Future<int> getDailyGoal() async {
+    final db = await _database;
+    final rows = await db.query('app_prefs', where: 'key = ?', whereArgs: ['daily_goal']);
+    return rows.isEmpty ? 0 : int.tryParse(rows.first['value'] as String) ?? 0;
+  }
+
+  Future<void> setDailyGoal(int words) async {
+    final db = await _database;
+    await db.insert('app_prefs', {'key': 'daily_goal', 'value': '${words < 0 ? 0 : words}'}, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
 
   Future<void> _createChatTable(Database db) => db.execute('''
     CREATE TABLE chat_messages (
