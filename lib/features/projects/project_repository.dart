@@ -16,7 +16,7 @@ import 'models/timeline_event_model.dart';
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 9;
+  static const _dbVersion = 10;
   static final _random = Random();
 
   final String? _databasePath;
@@ -51,7 +51,9 @@ class ProjectRepository {
             project_id TEXT NOT NULL,
             title TEXT NOT NULL,
             order_index INTEGER NOT NULL DEFAULT 0,
-            summary TEXT NOT NULL DEFAULT ''
+            summary TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'borrador',
+            threads TEXT NOT NULL DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -94,6 +96,10 @@ class ProjectRepository {
         }
         if (oldVersion < 9) {
           await _createWritingLogTable(db);
+        }
+        if (oldVersion < 10) {
+          await db.execute("ALTER TABLE chapters ADD COLUMN status TEXT NOT NULL DEFAULT 'borrador'");
+          await db.execute("ALTER TABLE chapters ADD COLUMN threads TEXT NOT NULL DEFAULT ''");
         }
         if (oldVersion == 7) {
           // v7 builds made before the `meta` column existed.
@@ -232,6 +238,12 @@ class ProjectRepository {
     final db = await _database;
     final rows = await db.query('chapters', where: 'project_id = ?', whereArgs: [projectId], orderBy: 'order_index ASC');
     return rows.map(ChapterModel.fromMap).toList();
+  }
+
+  /// Board fields only, so a stale chapter copy elsewhere can't overwrite the title or summary.
+  Future<void> updateChapterBoard(String chapterId, {required String status, required List<String> threads}) async {
+    final db = await _database;
+    await db.update('chapters', {'status': status, 'threads': ChapterModel.joinThreads(threads)}, where: 'id = ?', whereArgs: [chapterId]);
   }
 
   Future<void> updateChapterSummary(String chapterId, String summary) async {
