@@ -5,6 +5,8 @@
 import 'dart:io';
 
 import 'package:aura_novel/core/network/dynamic_openai_client.dart';
+import 'package:aura_novel/core/network/models/chat_completion_request.dart';
+import 'package:aura_novel/core/network/models/chat_message.dart';
 import 'package:aura_novel/core/storage/secure_config_storage.dart';
 import 'package:aura_novel/features/writer/chapter_writer.dart';
 import 'package:aura_novel/features/writer/craft_library.dart';
@@ -50,6 +52,8 @@ void main() {
           out.writeln('[escena ${index + 1}/$total]');
         case ProseDelta(:final text):
           out.write(text);
+        case SceneDone() || PolishStarted() || ProseReplace():
+          break;
         case WriterFinished(:final words):
           out.writeln('\n\n[palabras: $words]');
       }
@@ -58,4 +62,26 @@ void main() {
     if (path != null) File(path).writeAsStringSync(out.toString());
     expect(ChapterWriter.countWords(out.toString()), greaterThan(300));
   }, skip: key == null ? 'define AURA_LIVE_KEY para probar contra un modelo real' : false, timeout: const Timeout(Duration(minutes: 8)));
+
+  test('pule una escena con el modelo configurado', () async {
+    HttpOverrides.global = null;
+    final storage = _LiveStorage(ApiEndpointConfig(
+      baseUrl: Platform.environment['AURA_LIVE_URL'] ?? 'http://127.0.0.1:20128/api/v1',
+      apiKey: key!,
+      modelId: Platform.environment['AURA_LIVE_MODEL'] ?? 'ddgw/gpt-5.4-mini',
+    ));
+    final client = DynamicOpenAIClient(configStorage: storage, timeout: const Duration(minutes: 3));
+    const scene = 'La casa era antigua y misteriosa. Mara sintió un escalofrío que le recorrió la espalda. '
+        'Era como si la casa estuviera viva y la observara con ojos invisibles. "No pasa nada", se dijo, aunque en el fondo '
+        'sabía que algo oscuro la esperaba. Subió las escaleras lentamente, cada paso resonando en el silencio.';
+    final system = await PromptComposer(CraftLibrary()).polishSystem(const WritingProfile(craftLevel: CraftLevel.esencial));
+    final response = await client.send(ChatCompletionRequest(
+      model: storage.config.modelId,
+      temperature: 0.6,
+      messages: [system, ChatMessage.user(scene)],
+    ));
+    final path = Platform.environment['AURA_LIVE_OUT'];
+    if (path != null) File('$path.polish.txt').writeAsStringSync('ANTES:\n$scene\n\nDESPUÉS:\n${response.content}');
+    expect(response.content.trim(), isNotEmpty);
+  }, skip: key == null ? 'define AURA_LIVE_KEY para probar contra un modelo real' : false, timeout: const Timeout(Duration(minutes: 4)));
 }

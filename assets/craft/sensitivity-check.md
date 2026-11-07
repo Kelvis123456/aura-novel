@@ -29,3 +29,34 @@ An optional representation-craft tool the author chooses to run when writing cha
 
 ## How to apply to a draft
 Reply in the same language as the passage. Start with a brief, respectful diagnosis: what the passage does well, then up to four specific craft observations, each quoting the line, saying why it may read flat or stereotyped, and noting context. Make clear that the author's intent and final decision stand. Then offer a rewritten passage that deepens the character: add individual specificity, interiority, agency or accurate detail, while keeping the plot events, tone and darkness the author chose. Do not soften or remove the author's subject matter. If detail needs lived knowledge you cannot verify, say so and suggest research or a reader from that community instead of inventing facts.
+
+## Deep notes
+
+Everything here is optional craft advice the author may take, adapt or ignore. The author's choices stand, and none of it limits what a story may contain.
+
+Six lenses an author can borrow. Each is a question about how a passage might read to someone who lives the experience being depicted.
+- Cultural detail (S1): does the passage give context, or lift a practice out of it? Look for an outsider character who discovers or explains a culture to the reader, mixed traditions treated as interchangeable, sacred or ceremonial practice used as set dressing, and a colonial or outdated anthropological tone. Checks: people from the culture have agency and speech, the culture's internal variety shows, borrowed language is accurate. Craft moves: center a voice from inside the culture, acknowledge sources, consult primary material and community members, and ask honestly whether this is the story you have the material to tell.
+- Gender (S2): look at who is described and how much. If a woman's body gets three sentences and a man's none, the narrating gaze is showing. Ask whether a female or nonbinary character exists only to move a male character along, whether the narrator treats feminine traits as lesser than masculine ones, and whether sexual violence is standing in for characterization. Give every character a want of her own and a scene that is not about a man.
+- Disability, mental health and body size (S3): ask whether the character has a life outside the condition and whether the ending requires a cure or overcoming. Watch for the inspirational disabled figure, impairment paired with a compensating gift, villainy explained by diagnosis, and a fat character who is only comic. Show accessibility and adaptive tools as ordinary, use the terminology the community prefers, and let the character be tired, funny, cruel or happy like anyone else.
+- Stereotype patterns (S4): common ones include the model-minority or martial-arts Asian character, the athletic or criminal or magical Black character, the fiery Latino or domestic worker, the mystical or vanishing Indigenous character, the tragic or predatory or comic queer character, the wealthy neurotic Jewish character, and the terrorist or oppressed Muslim character. The fix is not the opposite stereotype; it is individual traits, varied professions and range, plus several characters from one group who differ from each other. Background characters deserve the same complexity as leads.
+- Agency and voice (S5): ask who drives the plot, whose perspective is centered, who makes meaningful choices, and who gets to speak for themselves. A story about a community told only through a visiting outsider, a helper who exists to teach the protagonist, or a resolution that benefits only the default character are signs the center of the story sits in the wrong place. Give supporting characters their own goals and arcs, and ask whose story this really is.
+- Tropes (S6): death and suffering (characters from a group dying at a higher rate than others, disability storylines that end only in death, women killed to motivate a man, mixed-race tragedy centered on identity), utility (a character who exists to give wisdom or support to the protagonist), and danger (queerness coded as corruption or predation, a trans character as deceiver, mental illness as the cause of violence). If you use one, do it with visible awareness, or invert it. The author keeps the option of keeping it.
+
+A workable pass, in order.
+- List every identity present: race and ethnicity, gender, orientation, disability and neurodivergence, mental health, body size, religion, class, age, national origin.
+- Note concrete passages, not general impressions.
+- For each note give five things: the passage, why it may land badly, context or history, an alternative, and what the author already does well.
+
+Emphasis levels, informational only. Critical means a pattern likely to hurt readers; Significant means a repeated pattern; Minor means an isolated moment; Note means something worth knowing. These weights tell the author where a reader may stumble. They are not verdicts, and the author may treat a Critical note as intended.
+
+Failure modes of a bad pass, to avoid.
+- Word police: flagging a word with no context.
+- Quota thinking: demanding a demographic count. Quality beats quantity, and a few well-written characters beat many tokens.
+- Purity test: requiring a flawless result, which discourages trying at all.
+- Outsider prohibition: claiming writers may only write their own identity. How it is written matters more than who writes it.
+- Context blindness: flagging historical attitudes in historical fiction. Depicting is not endorsing; check the stance the text takes.
+
+Worked patterns.
+- A protagonist travels to a village and builds a well. The agency lens asks who is acted upon. Possible shifts: make village members the protagonists, or write the villagers' own project with the visitor in a supporting role.
+- A villain whose violence is explained by a diagnosis. The trope lens offers two options: separate the condition from the villainy, or leave the character undiagnosed and give the violence another cause.
+

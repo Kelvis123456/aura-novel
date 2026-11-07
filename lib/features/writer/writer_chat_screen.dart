@@ -30,6 +30,7 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
   ChatMode _mode = ChatMode.chat;
   int _words = 1500;
   bool _continueChapter = true;
+  bool _deepResearch = true;
 
   static const _wordOptions = [800, 1500, 3000, 5000];
 
@@ -79,7 +80,7 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
     final text = _input.text;
     if (text.trim().isEmpty) return;
     _input.clear();
-    _controller.send(text, _mode, words: _words, continueChapter: _continueChapter);
+    _controller.send(text, _mode, words: _words, continueChapter: _continueChapter, deepResearch: _deepResearch);
   }
 
   Future<void> _tools() async {
@@ -399,6 +400,18 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
                         side: BorderSide(color: _mode == mode ? c.accent : c.line),
                       ),
                     ),
+                  if (_mode == ChatMode.research) ...[
+                    Container(width: 1, height: 20, color: c.line, margin: const EdgeInsets.only(right: 8)),
+                    FilterChip(
+                      label: Text('Profunda', style: TextStyle(color: c.text)),
+                      tooltip: 'Varias consultas y una síntesis. Tarda más y gasta más llamadas.',
+                      selected: _deepResearch,
+                      onSelected: (v) => setState(() => _deepResearch = v),
+                      showCheckmark: false,
+                      selectedColor: c.surfaceHigh,
+                      side: BorderSide(color: c.line),
+                    ),
+                  ],
                   if (_mode == ChatMode.chapter) ...[
                     Container(width: 1, height: 20, color: c.line, margin: const EdgeInsets.only(right: 8)),
                     for (final w in _wordOptions)

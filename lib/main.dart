@@ -65,14 +65,16 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
     _loreRepository = LoreRepository();
     _contextBuilder = ContextBuilderService(repository: _loreRepository);
     _projectRepository = ProjectRepository();
+    final craft = CraftLibrary();
     _chapterSummaryService = ChapterSummaryService(
       client: _apiClient,
       repository: _projectRepository,
       storage: _configStorage,
+      guidance: () async => (await _configStorage.load())?.isLocal == true ? null : craft.rules('summarization'),
     );
     _backupService = BackupService(projects: _projectRepository, lore: _loreRepository);
     // A model in the phone has a small context: it always gets the short craft prompt.
-    _promptComposer = PromptComposer(CraftLibrary(), preferShort: () async => (await _configStorage.load())?.isLocal ?? false);
+    _promptComposer = PromptComposer(craft, preferShort: () async => (await _configStorage.load())?.isLocal ?? false);
     _writerService = WriterService(
       client: _apiClient,
       storage: _configStorage,

@@ -36,10 +36,26 @@ class PromptComposer {
   /// For running one module on a passage or a question. The module's own text
   /// says what to return; the persona keeps the author's freedom intact.
   Future<ChatMessage> toolSystem(String moduleId, WritingProfile profile) async {
+    final deep = await preferShort?.call() != true;
     final parts = <String>[
       await library.persona(),
       'PROJECT PROFILE\n${profile.toPromptBlock()}',
-      'TOOL: ${CraftLibrary.byId(moduleId)?.label ?? moduleId}\nApply the following module to the author\'s material. Answer in ${profile.languageName}.\n\n${await library.full(moduleId)}',
+      'TOOL: ${CraftLibrary.byId(moduleId)?.label ?? moduleId}\nApply the following module to the author\'s material. Answer in ${profile.languageName}.\n\n${await library.full(moduleId, deep: deep)}',
+    ];
+    return ChatMessage.system(parts.join('\n\n'));
+  }
+
+  /// For the pass that rewrites a finished scene: same events, better sentences.
+  Future<ChatMessage> polishSystem(WritingProfile profile) async {
+    final parts = <String>[
+      await library.persona(),
+      'PROJECT PROFILE\n${profile.toPromptBlock()}',
+      'POLISH PASS\n'
+          'You receive one scene of a draft. Rewrite it applying the craft rules below: remove machine-writing tics, flat or '
+          'repetitive sentences, stock phrases and clichés; sharpen dialogue, rhythm and concrete detail. Keep every event, fact, '
+          'name, point of view, tense, language and register, and keep about the same length. Add no plot and remove none. '
+          'Output only the rewritten scene, with no comments.',
+      await _craft(profile),
     ];
     return ChatMessage.system(parts.join('\n\n'));
   }

@@ -29,3 +29,35 @@ Use when the genre promise is unclear, genre elements feel misplaced or missing,
 
 ## How to apply to a draft
 Reply in the same language as the passage. First give a diagnosis: the primary and any secondary genre you detect, the promise the passage makes, which required elements are present or missing, and the main problem (missing promise, wrong genre, misplaced elements, competing secondary genre, setting mistaken for genre, stale convention). Name one change that matters most. Then return a rewritten passage that fixes it, for instance by adding a genre marker to the opening, moving a clue or beat to its right place, adding a missing element such as a ticking clock or a vulnerability, or containing a competing subplot. Keep the author's plot, names, voice and chosen genre unless the author asked to change it.
+
+## Deep notes
+
+The eight genre problem states, with the signature of each.
+- G1, missing promise: readers ask what kind of book it is. Ask the author what the reader should feel, name the elemental genre that produces that feeling, then check the first chapter for a marker of it.
+- G2, wrong genre: thriller pacing wrapped around relationship content, or a mystery structure with an adventure payoff. Align the genre to the material, not the material to the genre, and ask which genre would make the material sing.
+- G3, misplaced elements: the right ingredients at the wrong time. Map element placement against the reader's expectation curve and confirm setup precedes payoff.
+- G4, secondary genre undermining the primary: when does it get page time, and does it deepen or interrupt?
+- G5, missing required elements: check whether setting is being asked to do the genre's work, and make sure every required element appears before the final act.
+- G6, unexamined clichés: list which conventions are in use by default, then deliver the same emotion by an unexpected path.
+- G7, setting mistaken for genre: ask what the story would be in a contemporary setting.
+- G8, ensemble without assignment: pick one umbrella genre, assign each POV thread a compatible subgenre, and map every POV transition for tonal fit; a dominant POV sets expectations.
+
+Genre-specific material to reach for.
+- Wonder runs on scale revelations (the small thing is part of something vast; the natural phenomenon is engineered; the ancient is recent in context) and on reversals such as dead revealed as dormant, random revealed as signal, separate revealed as connected.
+- Idea runs on a central concept followed through implication chains: who benefits, who loses, who adapts; or luxury becomes necessity becomes assumed; or what was crime becomes treatment becomes enhancement. Test the concept with edge cases, scale changes, a user who uses it as intended but wrongly, and a success that creates an unexpected obligation.
+- Adventure escalates in pairs: a hazard the equipment can handle, then one it cannot; an adversary who can be avoided, then one who hunts; a scarce resource, then a contested one. Track resource pressures such as water, fuel, light, warmth, trust and stamina.
+- Horror needs a vulnerability from the start (isolation, injury, responsibility for someone weaker, a secret the threat could expose), a threat with rules (it enters only if invited, sees only movement, cannot cross a boundary, cannot lie directly but can deceive), and an escalation ladder: first sign dismissed, second sign shared but not believed, evidence that should not exist, a trusted person changes, discovery it has happened before, loss of exit, a protective rule broken.
+- Mystery needs clues, red herrings and a revelation structure. Useful revelations: the truth was visible from the start, only its meaning hidden; the assumption everyone made was wrong; two mysteries were one; the witness saw correctly but interpreted wrongly. Good red herrings are true facts that mislead, or suspicious behavior with an innocent reason. Fair play means the reader can see every clue the detective sees.
+- Thriller needs a clock, a stake type (personal, professional, global, existential, moral, relational) and power shifts: hunter becomes hunted, ally revealed as enemy, safe house compromised, leverage evaporates. Narrow escapes must cost something; a distraction works once and not twice.
+- Humor runs on incongruity (scale mismatch, competence mismatch, cultural collision), subversion (a hero speech delivered to the wrong audience) and timing: the rule of three is set up, reinforce, break; or a callback after a long delay.
+- Relationship runs on a meaningful obstacle (hidden history, status gap, promised to another) and a progression such as forced proximity to reluctant alliance to genuine bond, or distrust to testing to earned trust. A test should cost one partner something.
+- Drama pits values against each other (honesty versus kindness, duty versus desire, principle versus pragmatism) and forces a choice where both options require sacrifice.
+- Issue needs several valid positions: the true believer with good reason, the pragmatist, the idealist who suffers, the convert, the beneficiary who never questions. Reveal complexity: the opponent has a point, the ally is right for wrong reasons, the right position uses the wrong method.
+- Ensemble needs complementary roles and tensions: contested leadership, old history between members, a secret that threatens cohesion, glory versus the group.
+
+Blending with proportions. These are starting guides, not laws.
+- Mystery with relationship, about 70/30: investigation forces proximity, clue-gathering scenes double as bonding scenes, relationship beats sit in the quiet scenes after the action. Failure: clues get lost in conversations about feelings.
+- Thriller with horror, about 60/40: alternate action with dread, and keep the protagonist vulnerable or the dread dies. Failure: constant action never lets dread build.
+- Thriller with humor, about 80/20: humor goes in setup and aftermath, never at peak tension; use character humor and gallows humor, not situation comedy.
+- Adventure with wonder, about 70/30: place wonder at act breaks and arrivals so it rewards the obstacle just overcome.
+
