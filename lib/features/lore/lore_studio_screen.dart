@@ -5,6 +5,7 @@ import 'character_form_sheet.dart';
 import 'lore_item_form_sheet.dart';
 import 'lore_studio_controller.dart';
 import 'models/character_model.dart';
+import 'relationship_graph.dart';
 import 'models/lore_item_model.dart';
 import '../projects/models/project_model.dart';
 import '../../core/theme/aura_theme.dart';
@@ -120,6 +121,13 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
         elevation: 0,
         title: const Text('Mundo'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.hub_outlined),
+            tooltip: 'Mapa de relaciones',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => RelationshipGraphScreen(characters: _controller.scopedCharacters)),
+            ),
+          ),
           IconButton(
             icon: Icon(_controller.showAll ? Icons.filter_alt_off : Icons.filter_alt_outlined),
             tooltip: _controller.showAll ? 'Ver solo este proyecto y el universo compartido' : 'Ver las fichas de todos los proyectos',
