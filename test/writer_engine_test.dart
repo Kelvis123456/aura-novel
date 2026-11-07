@@ -208,4 +208,19 @@ void main() {
       expect(const WritingProfile().polishAfter, isFalse);
     });
   });
+
+  group('voz del autor', () {
+    test('una muestra entra en el prompt y se recorta', () {
+      final block = WritingProfile(voiceSample: 'x' * 20000).toPromptBlock();
+      expect(block, contains('AUTHOR VOICE SAMPLE'));
+      expect(block.length, lessThan(WritingProfile.maxVoiceChars + 600));
+    });
+
+    test('sin muestra no hay bloque y el JSON la conserva', () {
+      expect(const WritingProfile().toPromptBlock(), isNot(contains('VOICE SAMPLE')));
+      final back = WritingProfile.fromJsonString(const WritingProfile(voiceSample: 'Llovía sin ganas.').toJsonString());
+      expect(back.voiceSample, 'Llovía sin ganas.');
+    });
+  });
 }
+
