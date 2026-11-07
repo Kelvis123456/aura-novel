@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'core/app_scope.dart';
 import 'core/theme/aura_theme.dart';
+import 'core/widgets/app_shell.dart';
 import 'core/network/dynamic_openai_client.dart';
 import 'core/storage/secure_config_storage.dart';
-import 'features/editor/editor_screen.dart';
 import 'features/lore/context_builder_service.dart';
 import 'features/lore/lore_repository.dart';
 import 'features/projects/backup_service.dart';
@@ -85,7 +85,7 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
         theme: AuraTheme.light,
         darkTheme: AuraTheme.dark,
         themeMode: ThemeMode.system,
-        home: const EditorScreen(),
+        home: const AppShell(),
       ),
     );
   }

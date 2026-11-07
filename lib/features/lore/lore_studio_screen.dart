@@ -18,7 +18,10 @@ class LoreStudioScreen extends StatefulWidget {
   /// Project the studio was opened from; null for the scratch editor.
   final String? projectId;
 
-  const LoreStudioScreen({super.key, this.accentColor, this.projectId});
+  /// Start with every project's entries visible (the Mundo tab has no project).
+  final bool showAllProjects;
+
+  const LoreStudioScreen({super.key, this.accentColor, this.projectId, this.showAllProjects = false});
 
   @override
   State<LoreStudioScreen> createState() => _LoreStudioScreenState();
@@ -36,6 +39,7 @@ class _LoreStudioScreenState extends State<LoreStudioScreen> with SingleTickerPr
     final scope = AppScope.of(context);
     _controller = LoreStudioController(repository: scope.loreRepository)
       ..scopeProjectId = widget.projectId
+      ..showAll = widget.showAllProjects
       ..addListener(_onControllerChanged);
     scope.projectRepository.getAllProjects().then((projects) {
       if (mounted) setState(() => _projects = projects);

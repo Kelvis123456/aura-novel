@@ -5,13 +5,13 @@ import '../../core/app_scope.dart';
 import '../lore/lore_studio_screen.dart';
 import '../projects/editor_document_binding.dart';
 import '../projects/models/story_node_model.dart';
-import '../projects/project_manager_screen.dart';
 import '../projects/project_repository.dart';
 import '../settings/api_settings_screen.dart';
 import 'draft_autosaver.dart';
 import 'editor_controller.dart';
 import 'prompt_bar_widgets.dart';
 import '../../core/theme/aura_theme.dart';
+import '../../core/widgets/aura_mark.dart';
 
 /// Full-screen immersive writing canvas for "AURA NOVEL": streams AI
 /// continuations directly into the document, offers a floating hot-prompt
@@ -49,7 +49,6 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
   final _canvasScrollController = ScrollController();
   final _promptFieldController = TextEditingController();
   final _promptFocusNode = FocusNode();
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -253,9 +252,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
     final distractionFree = _controller.distractionFreeMode;
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: context.aura.bg,
-      drawer: _buildDrawer(accent),
       body: SafeArea(
         child: Column(
           children: [
@@ -286,11 +283,14 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(Icons.menu, color: context.aura.textDim, size: 20),
-            tooltip: 'Menú',
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          ),
+          if (Navigator.of(context).canPop())
+            IconButton(
+              icon: Icon(Icons.arrow_back, color: context.aura.textDim, size: 20),
+              tooltip: 'Volver',
+              onPressed: () => Navigator.of(context).maybePop(),
+            )
+          else
+            const Padding(padding: EdgeInsets.fromLTRB(12, 0, 12, 0), child: AuraMark(size: 26)),
           Icon(Icons.circle, size: 8, color: _controller.isGenerating ? accent : context.aura.textFaint),
           const SizedBox(width: 8),
           Flexible(
@@ -332,6 +332,14 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
             tooltip: _binding == null ? 'Abre este capítulo desde "Mis Proyectos" para guardar versiones' : 'Guardar versión',
             onPressed: _binding == null ? null : _saveVersion,
           ),
+          if (_binding != null)
+            IconButton(
+              icon: Icon(Icons.public_outlined, color: context.aura.textDim, size: 20),
+              tooltip: 'Mundo de este proyecto',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => LoreStudioScreen(projectId: _binding?.projectId)),
+              ),
+            ),
           IconButton(
             icon: Icon(Icons.fullscreen, color: context.aura.textDim, size: 20),
             tooltip: 'Modo inmersivo',
@@ -429,57 +437,6 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
             child: const Text('Aceptar'),
           ),
         ],
-      ),
-    );
-  }
-
-  Drawer _buildDrawer(Color accent) {
-    return Drawer(
-      backgroundColor: context.aura.surface,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                'AURA NOVEL',
-                style: TextStyle(color: accent, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1.2),
-              ),
-            ),
-            Divider(color: context.aura.line, height: 1),
-            ListTile(
-              leading: Icon(Icons.auto_stories_outlined, color: accent),
-              title: Text('Studio de Personajes y Lore', style: TextStyle(color: context.aura.text)),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => LoreStudioScreen(accentColor: accent, projectId: _binding?.projectId)),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.folder_open_outlined, color: accent),
-              title: Text('Mis Proyectos', style: TextStyle(color: context.aura.text)),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ProjectManagerScreen(accentColor: accent)),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.settings_outlined, color: accent),
-              title: Text('Ajustes de API', style: TextStyle(color: context.aura.text)),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ApiSettingsScreen(accentColor: accent)),
-                );
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
