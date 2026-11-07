@@ -15,6 +15,7 @@ import 'models/project_model.dart';
 import 'models/story_node_model.dart';
 import 'project_cards.dart';
 import 'project_controller.dart';
+import '../writer/diff_review_sheet.dart';
 import 'timeline_screen.dart';
 import 'wiki_export_service.dart';
 import '../../core/theme/aura_theme.dart';
@@ -718,6 +719,12 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
     }
   }
 
+  Future<void> _compareWithParent(StoryNodeModel node) async {
+    final parent = _nodes.where((n) => n.id == node.parentNodeId).firstOrNull;
+    if (parent == null) return;
+    await showDiffReview(context, original: parent.content, updated: node.content, readOnly: true);
+  }
+
   Future<void> _createBranchFrom(StoryNodeModel node) async {
     final nameController = TextEditingController();
 
@@ -783,6 +790,7 @@ class _ChapterDetailScreenState extends State<_ChapterDetailScreen> {
                 accent: accent,
                 onSelectNode: _handleSelectNode,
                 onBranchFromNode: _createBranchFrom,
+                onCompare: _compareWithParent,
               ),
       ),
       floatingActionButton: _nodes.isEmpty
