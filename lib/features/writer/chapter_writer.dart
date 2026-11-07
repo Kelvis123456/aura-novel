@@ -139,7 +139,9 @@ class ChapterWriter {
         ..writeln(isLast
             ? 'This is the final part: bring it to a satisfying close that fits the chapter.'
             : 'More follows after this part: do not conclude, summarize or wrap up. End mid-motion.')
-        ..writeln('If this part starts a new scene, begin with a line containing * * * . Output only the prose.');
+        ..writeln(written.trim().isEmpty
+            ? 'Start directly with the prose, with no scene-break marker. Output only the prose.'
+            : 'If this part starts a new scene, begin with a line containing * * * . Output only the prose.');
 
       final request = ChatCompletionRequest(
         model: config.modelId,
