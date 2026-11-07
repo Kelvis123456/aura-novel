@@ -57,6 +57,7 @@ class EditorController extends ChangeNotifier {
   final ContextBuilderService? _contextBuilder;
   final Future<ChatMessage?> Function(int maxChars)? _storyContext;
   final String? _projectId;
+  final Future<ChatMessage> Function()? _proseSystem;
 
   /// [client]/[storage]/[contextBuilder] are normally the shared instances
   /// from [AppScope] — pass none to let this controller create (and own)
@@ -67,12 +68,14 @@ class EditorController extends ChangeNotifier {
     ContextBuilderService? contextBuilder,
     Future<ChatMessage?> Function(int maxChars)? storyContext,
     String? projectId,
+    Future<ChatMessage> Function()? proseSystem,
   })  : _client = client ?? DynamicOpenAIClient(),
         _ownsClient = client == null,
         _storage = storage ?? SecureConfigStorage(),
         _contextBuilder = contextBuilder,
         _storyContext = storyContext,
-        _projectId = projectId {
+        _projectId = projectId,
+        _proseSystem = proseSystem {
     textController.addListener(notifyListeners);
   }
 
@@ -182,7 +185,7 @@ class EditorController extends ChangeNotifier {
   Future<void> continueStory() async {
     final context = _recentContext();
     final messages = [
-      ChatMessage.system(
+      await _system(
         'Eres un asistente de escritura creativa. Continúa la historia manteniendo '
         'la voz, el tono y la coherencia de personajes ya establecidos. Responde '
         'únicamente con la continuación narrativa, sin comentarios ni metatexto.',
@@ -190,7 +193,8 @@ class EditorController extends ChangeNotifier {
       ChatMessage.user(
         context.trim().isEmpty
             ? 'Empieza la historia con una escena de apertura.'
-            : 'Continúa la historia a partir de este fragmento:\n\n$context',
+            : 'Continúa la historia a partir de este fragmento, sin repetirlo '
+                '(unas 300 a 600 palabras, dramatizadas):\n\n$context',
       ),
     ];
     await _runAppendGeneration(messages);
@@ -204,7 +208,7 @@ class EditorController extends ChangeNotifier {
 
     final context = _recentContext();
     final messages = [
-      ChatMessage.system(
+      await _system(
         'Eres un asistente de escritura creativa. Sigue la instrucción del autor '
         'y continúa el texto de forma coherente con el fragmento dado. Responde '
         'únicamente con la continuación narrativa.',
@@ -213,6 +217,9 @@ class EditorController extends ChangeNotifier {
     ];
     await _runAppendGeneration(messages);
   }
+
+  /// The writing engine's prompt when the screen provides one, else a plain fallback.
+  Future<ChatMessage> _system(String fallback) async => await _proseSystem?.call() ?? ChatMessage.system(fallback);
 
   /// Replaces the selected block with a rewritten variant.
   Future<void> rewriteSelection() => _runSelectionGeneration(

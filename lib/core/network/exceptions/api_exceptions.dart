@@ -10,21 +10,21 @@ sealed class ApiClientException implements Exception {
 /// No `baseUrl` / `apiKey` / `modelId` configured yet.
 class MissingConfigException extends ApiClientException {
   const MissingConfigException([
-    super.message = 'API endpoint is not configured. Set it in Settings.',
+    super.message = 'Falta conectar un modelo. Configúralo en Ajustes de API (la rueda del editor).',
   ]);
 }
 
 /// DNS/socket failure, connection refused, no connectivity, etc.
 class NetworkUnavailableException extends ApiClientException {
   const NetworkUnavailableException([
-    super.message = 'Could not reach the server. Check your connection or endpoint URL.',
+    super.message = 'No se pudo llegar al servidor. Revisa tu conexión y la URL del endpoint.',
   ]);
 }
 
 /// Request exceeded the configured timeout.
 class RequestTimeoutException extends ApiClientException {
   const RequestTimeoutException([
-    super.message = 'The request timed out.',
+    super.message = 'El servidor tardó demasiado en responder.',
   ]);
 }
 
@@ -39,8 +39,8 @@ class ServerErrorException extends ApiClientException {
   ServerErrorException(this.statusCode, {this.serverMessage, this.retryAfter})
       : super(
           serverMessage != null && serverMessage.isNotEmpty
-              ? 'Server error $statusCode: $serverMessage'
-              : 'Server error $statusCode',
+              ? 'Error del servidor ($statusCode): $serverMessage'
+              : 'Error del servidor ($statusCode)',
         );
 }
 
@@ -52,11 +52,11 @@ class UnauthorizedException extends ServerErrorException {
 /// Response body could not be parsed as expected JSON / SSE.
 class MalformedResponseException extends ApiClientException {
   const MalformedResponseException([
-    super.message = 'The server returned an unexpected response format.',
+    super.message = 'El servidor devolvió una respuesta que la app no entiende.',
   ]);
 }
 
 /// Caller cancelled an in-flight streaming request.
 class RequestCancelledException extends ApiClientException {
-  const RequestCancelledException([super.message = 'Request was cancelled.']);
+  const RequestCancelledException([super.message = 'Se canceló la petición.']);
 }
