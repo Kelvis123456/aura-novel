@@ -12,6 +12,10 @@ import 'features/projects/backup_service.dart';
 import 'features/projects/chapter_summary_service.dart';
 import 'features/projects/consistency_service.dart';
 import 'features/projects/project_repository.dart';
+import 'features/writer/chapter_writer.dart';
+import 'features/writer/craft_library.dart';
+import 'features/writer/prompt_composer.dart';
+import 'features/writer/writer_service.dart';
 
 void main() {
   runApp(const AuraNovelApp());
@@ -37,6 +41,9 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
   late final ChapterSummaryService _chapterSummaryService;
   late final BackupService _backupService;
   late final ConsistencyService _consistencyService;
+  late final PromptComposer _promptComposer;
+  late final WriterService _writerService;
+  late final ChapterWriter _chapterWriter;
 
   @override
   void initState() {
@@ -52,6 +59,15 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       storage: _configStorage,
     );
     _backupService = BackupService(projects: _projectRepository, lore: _loreRepository);
+    _promptComposer = PromptComposer(CraftLibrary());
+    _writerService = WriterService(
+      client: _apiClient,
+      storage: _configStorage,
+      composer: _promptComposer,
+      lore: _contextBuilder,
+      summaries: _chapterSummaryService,
+    );
+    _chapterWriter = ChapterWriter(client: _apiClient, storage: _configStorage, composer: _promptComposer);
     _consistencyService = ConsistencyService(
       client: _apiClient,
       repository: _projectRepository,
@@ -80,6 +96,9 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       chapterSummaryService: _chapterSummaryService,
       backupService: _backupService,
       consistencyService: _consistencyService,
+      promptComposer: _promptComposer,
+      writerService: _writerService,
+      chapterWriter: _chapterWriter,
       child: MaterialApp(
         title: 'AURA NOVEL',
         debugShowCheckedModeBanner: false,

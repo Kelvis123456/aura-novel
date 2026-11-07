@@ -1,3 +1,4 @@
+import '../../writer/writing_profile.dart';
 import 'fantasy_calendar_model.dart';
 
 /// A novel-length writing project — the top-level container for chapters.
@@ -14,6 +15,9 @@ class ProjectModel {
   /// Local path of the map image, empty when none. The path travels in the JSON backup but the image file does not.
   final String mapPath;
 
+  /// How this project's prose should read; see the writer feature.
+  final WritingProfile writingProfile;
+
   const ProjectModel({
     required this.id,
     required this.title,
@@ -22,9 +26,10 @@ class ProjectModel {
     required this.updatedAt,
     this.calendar,
     this.mapPath = '',
+    this.writingProfile = const WritingProfile(),
   });
 
-  ProjectModel copyWith({String? title, String? synopsis, DateTime? updatedAt, FantasyCalendar? calendar, bool clearCalendar = false, String? mapPath}) => ProjectModel(
+  ProjectModel copyWith({String? title, String? synopsis, DateTime? updatedAt, FantasyCalendar? calendar, bool clearCalendar = false, String? mapPath, WritingProfile? writingProfile}) => ProjectModel(
         id: id,
         title: title ?? this.title,
         synopsis: synopsis ?? this.synopsis,
@@ -32,6 +37,7 @@ class ProjectModel {
         updatedAt: updatedAt ?? this.updatedAt,
         calendar: clearCalendar ? null : (calendar ?? this.calendar),
         mapPath: mapPath ?? this.mapPath,
+        writingProfile: writingProfile ?? this.writingProfile,
       );
 
   Map<String, dynamic> toMap() => {
@@ -42,6 +48,7 @@ class ProjectModel {
         'updated_at': updatedAt.toIso8601String(),
         'calendar': calendar?.toJsonString() ?? '',
         'map_path': mapPath,
+        'writing_profile': writingProfile.toJsonString(),
       };
 
   factory ProjectModel.fromMap(Map<String, dynamic> map) => ProjectModel(
@@ -52,6 +59,7 @@ class ProjectModel {
         updatedAt: DateTime.parse(map['updated_at'] as String),
         calendar: FantasyCalendar.fromJsonString(map['calendar'] as String?),
         mapPath: map['map_path'] as String? ?? '',
+        writingProfile: WritingProfile.fromJsonString(map['writing_profile'] as String?),
       );
 }
 

@@ -8,6 +8,9 @@ import '../features/projects/backup_service.dart';
 import '../features/projects/chapter_summary_service.dart';
 import '../features/projects/consistency_service.dart';
 import '../features/projects/project_repository.dart';
+import '../features/writer/chapter_writer.dart';
+import '../features/writer/prompt_composer.dart';
+import '../features/writer/writer_service.dart';
 
 /// App-wide dependency container. A single instance of each shared resource
 /// (network client, secure storage, lore DB, project DB) lives here so
@@ -27,6 +30,9 @@ class AppScope extends InheritedWidget {
   final ChapterSummaryService chapterSummaryService;
   final BackupService backupService;
   final ConsistencyService consistencyService;
+  final PromptComposer promptComposer;
+  final WriterService writerService;
+  final ChapterWriter chapterWriter;
 
   const AppScope({
     super.key,
@@ -38,6 +44,9 @@ class AppScope extends InheritedWidget {
     required this.chapterSummaryService,
     required this.backupService,
     required this.consistencyService,
+    required this.promptComposer,
+    required this.writerService,
+    required this.chapterWriter,
     required super.child,
   });
 

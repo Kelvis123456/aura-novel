@@ -7,6 +7,8 @@ import 'models/project_model.dart';
 import 'models/fantasy_calendar_model.dart';
 import 'models/map_pin_model.dart';
 import 'models/story_node_model.dart';
+import '../writer/chat_entry.dart';
+import '../writer/writing_profile.dart';
 import 'models/timeline_event_model.dart';
 
 /// SQLite-backed CRUD store for projects, chapters and their branching
@@ -14,7 +16,7 @@ import 'models/timeline_event_model.dart';
 /// for the app's lifetime.
 class ProjectRepository {
   static const _dbFileName = 'aura_projects.db';
-  static const _dbVersion = 6;
+  static const _dbVersion = 7;
   static final _random = Random();
 
   final String? _databasePath;
@@ -39,7 +41,8 @@ class ProjectRepository {
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             calendar TEXT NOT NULL DEFAULT '',
-            map_path TEXT NOT NULL DEFAULT ''
+            map_path TEXT NOT NULL DEFAULT '',
+            writing_profile TEXT NOT NULL DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -64,6 +67,7 @@ class ProjectRepository {
         await _createDraftsTable(db);
         await _createTimelineTable(db);
         await _createMapPinsTable(db);
+        await _createChatTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // One block per version, so a DB two versions behind runs both.
@@ -82,6 +86,10 @@ class ProjectRepository {
         if (oldVersion < 6) {
           await db.execute("ALTER TABLE projects ADD COLUMN map_path TEXT NOT NULL DEFAULT ''");
           await _createMapPinsTable(db);
+        }
+        if (oldVersion < 7) {
+          await db.execute("ALTER TABLE projects ADD COLUMN writing_profile TEXT NOT NULL DEFAULT ''");
+          await _createChatTable(db);
         }
       },
     );
@@ -116,6 +124,18 @@ class ProjectRepository {
       y REAL NOT NULL,
       label TEXT NOT NULL DEFAULT '',
       lore_item_id TEXT
+    )
+  ''');
+
+  Future<void> _createChatTable(Database db) => db.execute('''
+    CREATE TABLE chat_messages (
+      id TEXT PRIMARY KEY,
+      project_id TEXT,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      kind TEXT NOT NULL DEFAULT 'chat',
+      created_at TEXT NOT NULL,
+      meta TEXT NOT NULL DEFAULT ''
     )
   ''');
 
@@ -154,6 +174,7 @@ class ProjectRepository {
     }
     batch.delete('timeline_events', where: 'project_id = ?', whereArgs: [projectId]);
     batch.delete('map_pins', where: 'project_id = ?', whereArgs: [projectId]);
+    batch.delete('chat_messages', where: 'project_id = ?', whereArgs: [projectId]);
     batch.delete('chapters', where: 'project_id = ?', whereArgs: [projectId]);
     batch.delete('projects', where: 'id = ?', whereArgs: [projectId]);
     await batch.commit(noResult: true);
@@ -235,6 +256,42 @@ class ProjectRepository {
         where: 'id = ?', whereArgs: [projectId]);
   }
 
+  Future<void> setProjectWritingProfile(String projectId, WritingProfile profile) async {
+    final db = await _database;
+    await db.update('projects', {'writing_profile': profile.toJsonString(), 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?', whereArgs: [projectId]);
+  }
+
+  // ---- Writing assistant chat ----------------------------------------------
+
+  Future<void> saveChatEntry(ChatEntry entry) async {
+    final db = await _database;
+    await db.insert('chat_messages', entry.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Oldest first. [projectId] null is the conversation with no project.
+  Future<List<ChatEntry>> getChat(String? projectId) async {
+    final db = await _database;
+    final rows = projectId == null
+        ? await db.query('chat_messages', where: 'project_id IS NULL', orderBy: 'created_at ASC, rowid ASC')
+        : await db.query('chat_messages', where: 'project_id = ?', whereArgs: [projectId], orderBy: 'created_at ASC, rowid ASC');
+    return rows.map(ChatEntry.fromMap).toList();
+  }
+
+  Future<void> deleteChatEntry(String id) async {
+    final db = await _database;
+    await db.delete('chat_messages', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> clearChat(String? projectId) async {
+    final db = await _database;
+    if (projectId == null) {
+      await db.delete('chat_messages', where: 'project_id IS NULL');
+    } else {
+      await db.delete('chat_messages', where: 'project_id = ?', whereArgs: [projectId]);
+    }
+  }
+
   // ---- Timeline -----------------------------------------------------------
 
   Future<void> saveTimelineEvent(TimelineEvent event) async {
@@ -308,6 +365,7 @@ class ProjectRepository {
       'story_nodes': await db.query('story_nodes'),
       'timeline_events': await db.query('timeline_events'),
       'map_pins': await db.query('map_pins'),
+      'chat_messages': await db.query('chat_messages'),
     };
   }
 
@@ -317,7 +375,7 @@ class ProjectRepository {
     final db = await _database;
     await db.transaction((txn) async {
       final batch = txn.batch();
-      for (final table in const ['projects', 'chapters', 'story_nodes', 'timeline_events', 'map_pins']) {
+      for (final table in const ['projects', 'chapters', 'story_nodes', 'timeline_events', 'map_pins', 'chat_messages']) {
         for (final row in data[table] ?? const <Map<String, Object?>>[]) {
           batch.insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
         }

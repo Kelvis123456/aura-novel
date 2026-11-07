@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum LoreCategory { location, faction, object, worldRule, event }
+enum LoreCategory { location, faction, object, worldRule, event, research }
 
 extension LoreCategoryLabel on LoreCategory {
   String get label => switch (this) {
@@ -9,6 +9,7 @@ extension LoreCategoryLabel on LoreCategory {
         LoreCategory.object => 'Objeto',
         LoreCategory.worldRule => 'Regla del mundo',
         LoreCategory.event => 'Evento',
+        LoreCategory.research => 'Investigación',
       };
 
   static LoreCategory fromName(String name) =>

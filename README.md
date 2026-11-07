@@ -6,6 +6,7 @@ App móvil (Flutter, Android) para escribir novelas con ayuda de una IA. Hice la
 
 ## Qué hace
 
+- **Asistente** (pestaña propia): charla con contexto del proyecto, escribe capítulos largos de 800 a 5000 palabras (planifica escenas y las escribe una a una), investiga temas para la historia y guarda la nota como ficha de Mundo. Lleva dentro las técnicas de 26 skills de escritura (prosa, diálogo, clichés, ritmo, personajes, mundos) como herramientas que lanzas sobre un texto. Cada proyecto tiene su perfil: idioma, género, tono, punto de vista y registro, de suave a sucio. La app no filtra contenido; lo que se puede escribir depende del modelo que conectes.
 - **Editor** con contador de palabras y tiempo de lectura. El botón de continuar pide a la IA que siga la escena, y la instrucción rápida sirve para pedir ajustes ("aumenta la tensión"). Lo que escribe la IA queda marcado para aceptarlo o descartarlo (descartar devuelve el texto original), hay deshacer y rehacer, una meta de palabras por sesión y una estimación de los tokens gastados.
 - **Autosave:** lo que escribes sin guardar versión se guarda como borrador cada pocos segundos y se recupera al volver a abrir el capítulo.
 - **Proyectos y capítulos** guardados en SQLite local, y cada capítulo guarda su historial como un árbol de ramas (`story_nodes`): puedes bifurcar desde cualquier punto y volver a cargar una rama en el editor.

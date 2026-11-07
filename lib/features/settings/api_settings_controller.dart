@@ -67,10 +67,11 @@ class ApiSettingsController extends ChangeNotifier {
   String apiKey = '';
   String modelId = '';
   double temperature = 0.9;
-  int maxTokens = 800;
+  int maxTokens = 4096;
   double frequencyPenalty = 0.3;
   double presencePenalty = 0.2;
   int contextChars = ApiEndpointConfig.defaultContextChars;
+  String researchModelId = '';
 
   ConnectionStatus status = ConnectionStatus.unconfigured;
   String? statusDetail;
@@ -90,6 +91,7 @@ class ApiSettingsController extends ChangeNotifier {
       frequencyPenalty = config.frequencyPenalty;
       presencePenalty = config.presencePenalty;
       contextChars = config.contextChars;
+      researchModelId = config.researchModelId;
       status = ConnectionStatus.savedUntested;
     } else {
       // First run: pre-fill with Google's Gemini free tier (via its
@@ -123,6 +125,18 @@ class ApiSettingsController extends ChangeNotifier {
 
   void updateModelId(String value) {
     modelId = value;
+    notifyListeners();
+  }
+
+  void updateResearchModelId(String value) {
+    researchModelId = value;
+    notifyListeners();
+  }
+
+  /// Fills the endpoint fields from a provider preset; the key stays as it was.
+  void applyPreset(String url, String model) {
+    baseUrl = url;
+    modelId = model;
     notifyListeners();
   }
 
@@ -182,6 +196,7 @@ class ApiSettingsController extends ChangeNotifier {
         frequencyPenalty: frequencyPenalty,
         presencePenalty: presencePenalty,
         contextChars: contextChars,
+        researchModelId: researchModelId.trim(),
       );
 
   /// Returns true on success. On failure, [formErrors] is populated and the

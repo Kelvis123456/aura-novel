@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/editor/editor_screen.dart';
 import '../../features/lore/lore_studio_screen.dart';
 import '../../features/projects/project_manager_screen.dart';
+import '../../features/writer/writer_chat_screen.dart';
 import '../theme/aura_theme.dart';
 
 /// Root of the app: three tabs instead of a side drawer. Each tab keeps its
@@ -18,10 +19,12 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   final _visits = ValueNotifier<int>(0);
+  final _assistantVisits = ValueNotifier<int>(0);
 
   @override
   void dispose() {
     _visits.dispose();
+    _assistantVisits.dispose();
     super.dispose();
   }
 
@@ -34,6 +37,7 @@ class _AppShellState extends State<AppShell> {
         index: _index,
         children: [
           EditorScreen(visitSignal: _visits),
+          WriterChatScreen(visitSignal: _assistantVisits),
           const LoreStudioScreen(showAllProjects: true),
           const ProjectManagerScreen(),
         ],
@@ -61,9 +65,11 @@ class _AppShellState extends State<AppShell> {
             onDestinationSelected: (i) {
               setState(() => _index = i);
               if (i == 0) _visits.value++;
+              if (i == 1) _assistantVisits.value++;
             },
             destinations: const [
               NavigationDestination(icon: Icon(Icons.edit_outlined), selectedIcon: Icon(Icons.edit), label: 'Escribir'),
+              NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'Asistente'),
               NavigationDestination(icon: Icon(Icons.public_outlined), selectedIcon: Icon(Icons.public), label: 'Mundo'),
               NavigationDestination(icon: Icon(Icons.library_books_outlined), selectedIcon: Icon(Icons.library_books), label: 'Proyectos'),
             ],

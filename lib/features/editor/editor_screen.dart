@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import '../../core/app_scope.dart';
 import '../lore/lore_studio_screen.dart';
 import '../projects/continue_card.dart';
+import '../writer/writing_profile.dart';
 import '../projects/editor_document_binding.dart';
 import '../projects/models/story_node_model.dart';
 import '../projects/project_repository.dart';
@@ -67,6 +68,10 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
       storage: scope.configStorage,
       contextBuilder: scope.contextBuilder,
       projectId: widget.documentBinding?.projectId,
+      proseSystem: () async {
+        final project = widget.documentBinding == null ? null : await scope.projectRepository.getProject(widget.documentBinding!.projectId);
+        return scope.promptComposer.proseSystem(project?.writingProfile ?? const WritingProfile());
+      },
       storyContext: widget.documentBinding == null
           ? null
           : (maxChars) => scope.chapterSummaryService.buildPriorSummariesMessage(
