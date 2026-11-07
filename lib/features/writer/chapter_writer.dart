@@ -163,7 +163,7 @@ class ChapterWriter {
       }
       prompt
         ..writeln('NOW WRITE ${beats.length > 1 ? 'scene ${i + 1} of ${beats.length}' : 'the piece'}: ${beats[i]}')
-        ..writeln('Length: about $perScene words of finished prose, fully dramatized.')
+        ..writeln('Length: $perScene words of finished prose, fully dramatized. Models tend to overrun: aim a little under and stop before ${(perScene * 1.15).round()} words.')
         ..writeln(isLast
             ? 'This is the final part: bring it to a satisfying close that fits the chapter.'
             : 'More follows after this part: do not conclude, summarize or wrap up. End mid-motion.')

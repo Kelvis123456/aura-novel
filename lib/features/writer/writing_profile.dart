@@ -64,6 +64,9 @@ class WritingProfile {
   final String references;
   final String directions;
 
+  /// A few pages of the author's own prose. The model matches its rhythm and diction.
+  final String voiceSample;
+
   /// `esencial` sends a much shorter craft prompt, for small or local models.
   final CraftLevel craftLevel;
 
@@ -80,6 +83,7 @@ class WritingProfile {
     this.register = WritingRegister.natural,
     this.references = '',
     this.directions = '',
+    this.voiceSample = '',
     this.craftLevel = CraftLevel.completo,
     this.polishAfter = false,
   });
@@ -113,6 +117,7 @@ class WritingProfile {
     WritingRegister? register,
     String? references,
     String? directions,
+    String? voiceSample,
     CraftLevel? craftLevel,
     bool? polishAfter,
   }) =>
@@ -125,9 +130,17 @@ class WritingProfile {
         register: register ?? this.register,
         references: references ?? this.references,
         directions: directions ?? this.directions,
+        voiceSample: voiceSample ?? this.voiceSample,
         craftLevel: craftLevel ?? this.craftLevel,
         polishAfter: polishAfter ?? this.polishAfter,
       );
+
+  /// About 1.5k words is enough to hear a voice; more only eats the model's context.
+  static const maxVoiceChars = 8000;
+  static String _clip(String text) {
+    final t = text.trim();
+    return t.length <= maxVoiceChars ? t : t.substring(0, maxVoiceChars);
+  }
 
   /// The profile as prompt text. Empty fields are left out.
   String toPromptBlock() {
@@ -139,6 +152,9 @@ class WritingProfile {
       if (tone.trim().isNotEmpty) 'Tone: ${tone.trim()}.',
       if (references.trim().isNotEmpty) 'Stylistic references (absorb the technique, never copy phrasing): ${references.trim()}.',
       if (directions.trim().isNotEmpty) 'Author\'s standing directions: ${directions.trim()}',
+      if (voiceSample.trim().isNotEmpty)
+        'AUTHOR VOICE SAMPLE. Match this writer\'s sentence rhythm, diction, punctuation habits and imagery density. '
+            'Imitate the voice, never reuse its sentences or its story:\n<<<\n${_clip(voiceSample)}\n>>>',
     ];
     return lines.join('\n');
   }
@@ -152,6 +168,7 @@ class WritingProfile {
         'register': register.name,
         'references': references,
         'directions': directions,
+        'voiceSample': voiceSample,
         'craftLevel': craftLevel.name,
         'polishAfter': polishAfter,
       });
@@ -173,6 +190,7 @@ class WritingProfile {
         register: pick(WritingRegister.values, m['register'], WritingRegister.natural),
         references: m['references'] as String? ?? '',
         directions: m['directions'] as String? ?? '',
+        voiceSample: m['voiceSample'] as String? ?? '',
         craftLevel: pick(CraftLevel.values, m['craftLevel'], CraftLevel.completo),
         polishAfter: m['polishAfter'] == true,
       );
