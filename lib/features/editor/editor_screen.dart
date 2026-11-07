@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import '../../core/app_scope.dart';
 import '../lore/lore_studio_screen.dart';
 import '../projects/continue_card.dart';
+import '../projects/welcome_card.dart';
 import '../writer/writing_profile.dart';
 import '../projects/editor_document_binding.dart';
 import '../projects/models/story_node_model.dart';
@@ -287,6 +288,7 @@ class _EditorScreenState extends State<EditorScreen> with WidgetsBindingObserver
               _buildErrorBanner(),
             if (!distractionFree && _binding == null && widget.visitSignal != null && _controller.textController.text.isEmpty)
               ...[
+                WelcomeCard(refresh: widget.visitSignal!),
                 ContinueCard(refresh: widget.visitSignal!),
                 DailyGoalCard(refresh: widget.visitSignal!),
               ],
