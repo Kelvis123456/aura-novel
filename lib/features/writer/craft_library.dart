@@ -12,7 +12,7 @@ extension CraftGroupLabel on CraftGroup {
 }
 
 /// One writing-craft module: a skill distilled into prompt text and bundled
-/// in assets/craft/<id>.md. Modules the author can run on a passage appear as
+/// in `assets/craft/<id>.md`. Modules the author can run on a passage appear as
 /// tools in the assistant; [core] ones also shape every piece of prose.
 class CraftModule {
   final String id;
