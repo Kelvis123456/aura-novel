@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 
 import 'api_settings_controller.dart';
 import '../../core/theme/aura_theme.dart';
+import '../../core/app_scope.dart';
+import '../local_model/local_model_catalog.dart';
+import '../local_model/local_models_controller.dart';
 
 /// Connection settings screen for "AURA NOVEL" — dark glassmorphism styled
 /// form to configure a custom OpenAI-compatible endpoint, test it, and
@@ -28,11 +31,18 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
   late final TextEditingController _apiKeyField;
   late final TextEditingController _modelIdField;
   late final TextEditingController _researchField;
+  late final LocalModelsController _models;
 
   @override
   void initState() {
     super.initState();
-    _controller = ApiSettingsController()..addListener(_onControllerChanged);
+    final scope = AppScope.of(context);
+    _controller = ApiSettingsController(localClient: scope.localClient)
+      ..addListener(_onControllerChanged);
+    _models = LocalModelsController(
+        manager: scope.localModels, client: scope.localClient)
+      ..addListener(_onControllerChanged)
+      ..refresh();
     _baseUrlField = TextEditingController();
     _apiKeyField = TextEditingController();
     _modelIdField = TextEditingController();
@@ -52,6 +62,8 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
 
   @override
   void dispose() {
+    _models.removeListener(_onControllerChanged);
+    _models.dispose();
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     _baseUrlField.dispose();
@@ -65,7 +77,9 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
     final ok = await _controller.save();
     if (!mounted) return;
     _showSnack(
-      ok ? 'Configuración guardada de forma cifrada.' : 'Revisa los campos marcados en rojo.',
+      ok
+          ? 'Configuración guardada de forma cifrada.'
+          : 'Revisa los campos marcados en rojo.',
       isError: !ok,
     );
   }
@@ -76,7 +90,8 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
     if (_controller.status == ConnectionStatus.connected) {
       _showSnack('Conexión exitosa.');
     } else if (_controller.status != ConnectionStatus.invalidForm) {
-      _showSnack(_controller.statusDetail ?? _controller.status.label, isError: true);
+      _showSnack(_controller.statusDetail ?? _controller.status.label,
+          isError: true);
     }
   }
 
@@ -115,12 +130,14 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _StatusBadge(status: _controller.status, accent: accent),
+                        _StatusBadge(
+                            status: _controller.status, accent: accent),
                         if (_controller.statusDetail != null) ...[
                           const SizedBox(height: 8),
                           Text(
                             _controller.statusDetail!,
-                            style: TextStyle(color: context.aura.textDim, fontSize: 13),
+                            style: TextStyle(
+                                color: context.aura.textDim, fontSize: 13),
                           ),
                         ],
                         const SizedBox(height: 20),
@@ -132,82 +149,129 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 'La app no filtra nada: lo que se puede escribir lo decide el modelo que conectes. Los modelos locales o de proveedores sin censura escriben con más libertad que los comerciales.',
-                                style: TextStyle(color: context.aura.textFaint, fontSize: 12),
+                                style: TextStyle(
+                                    color: context.aura.textFaint,
+                                    fontSize: 12),
                               ),
                               const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  for (final (label, url, model) in const [
-                                    ('Gemini gratis', 'https://generativelanguage.googleapis.com/v1beta/openai', 'gemini-2.0-flash'),
-                                    ('OpenRouter', 'https://openrouter.ai/api/v1', 'nousresearch/hermes-3-llama-3.1-70b'),
-                                    ('Ollama (tu PC)', 'http://IP-DE-TU-PC:11434/v1', 'llama3.1'),
-                                    ('LM Studio (tu PC)', 'http://IP-DE-TU-PC:1234/v1', 'local-model'),
-                                  ])
-                                    ActionChip(
-                                      label: Text(label, style: TextStyle(color: context.aura.text, fontSize: 12)),
-                                      backgroundColor: context.aura.surface,
-                                      side: BorderSide(color: context.aura.line),
-                                      onPressed: () {
-                                        _controller.applyPreset(url, model);
-                                        _baseUrlField.text = url;
-                                        _modelIdField.text = model;
-                                      },
-                                    ),
+                              SegmentedButton<String>(
+                                showSelectedIcon: false,
+                                segments: const [
+                                  ButtonSegment(
+                                      value: 'remote',
+                                      label: Text('Servidor (API)'),
+                                      icon: Icon(Icons.cloud_outlined)),
+                                  ButtonSegment(
+                                      value: 'local',
+                                      label: Text('En este teléfono'),
+                                      icon: Icon(Icons.smartphone_outlined)),
                                 ],
+                                selected: {_controller.provider},
+                                onSelectionChanged: (s) =>
+                                    _controller.updateProvider(s.first),
                               ),
                               const SizedBox(height: 14),
-                              _buildTextField(
-                                controller: _baseUrlField,
-                                label: 'Base URL',
-                                hint: 'https://openrouter.ai/api/v1',
-                                errorText: _controller.formErrors['baseUrl'],
-                                onChanged: _controller.updateBaseUrl,
-                                keyboardType: TextInputType.url,
-                                accent: accent,
-                              ),
-                              const SizedBox(height: 14),
-                              _buildTextField(
-                                controller: _apiKeyField,
-                                label: 'API Key',
-                                hint: 'sk-...',
-                                errorText: _controller.formErrors['apiKey'],
-                                onChanged: _controller.updateApiKey,
-                                obscureText: _controller.obscureApiKey,
-                                accent: accent,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _controller.obscureApiKey
-                                        ? Icons.visibility_outlined
-                                        : Icons.visibility_off_outlined,
-                                    color: context.aura.textDim,
-                                  ),
-                                  onPressed: _controller.toggleApiKeyVisibility,
+                              if (_controller.isLocal)
+                                ..._localSection(accent)
+                              else ...[
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
+                                    for (final (label, url, model) in const [
+                                      (
+                                        'Gemini gratis',
+                                        'https://generativelanguage.googleapis.com/v1beta/openai',
+                                        'gemini-2.0-flash'
+                                      ),
+                                      (
+                                        'OpenRouter',
+                                        'https://openrouter.ai/api/v1',
+                                        'nousresearch/hermes-3-llama-3.1-70b'
+                                      ),
+                                      (
+                                        'Ollama (tu PC)',
+                                        'http://IP-DE-TU-PC:11434/v1',
+                                        'llama3.1'
+                                      ),
+                                      (
+                                        'LM Studio (tu PC)',
+                                        'http://IP-DE-TU-PC:1234/v1',
+                                        'local-model'
+                                      ),
+                                    ])
+                                      ActionChip(
+                                        label: Text(label,
+                                            style: TextStyle(
+                                                color: context.aura.text,
+                                                fontSize: 12)),
+                                        backgroundColor: context.aura.surface,
+                                        side: BorderSide(
+                                            color: context.aura.line),
+                                        onPressed: () {
+                                          _controller.applyPreset(url, model);
+                                          _baseUrlField.text = url;
+                                          _modelIdField.text = model;
+                                        },
+                                      ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 14),
-                              _buildTextField(
-                                controller: _modelIdField,
-                                label: 'Model ID',
-                                hint: 'nousresearch/hermes-3-llama-3.1-70b',
-                                errorText: _controller.formErrors['modelId'],
-                                onChanged: _controller.updateModelId,
-                                accent: accent,
-                              ),
-                              const SizedBox(height: 14),
-                              _buildTextField(
-                                controller: _researchField,
-                                label: 'Modelo de investigación (opcional)',
-                                hint: 'perplexity/sonar o un modelo ":online"',
-                                onChanged: _controller.updateResearchModelId,
-                                accent: accent,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Para investigar con datos de la web, usa un modelo con búsqueda. Si lo dejas vacío, investiga el mismo modelo que escribe.',
-                                style: TextStyle(color: context.aura.textFaint, fontSize: 12),
-                              ),
+                                const SizedBox(height: 14),
+                                _buildTextField(
+                                  controller: _baseUrlField,
+                                  label: 'Base URL',
+                                  hint: 'https://openrouter.ai/api/v1',
+                                  errorText: _controller.formErrors['baseUrl'],
+                                  onChanged: _controller.updateBaseUrl,
+                                  keyboardType: TextInputType.url,
+                                  accent: accent,
+                                ),
+                                const SizedBox(height: 14),
+                                _buildTextField(
+                                  controller: _apiKeyField,
+                                  label: 'API Key',
+                                  hint: 'sk-...',
+                                  errorText: _controller.formErrors['apiKey'],
+                                  onChanged: _controller.updateApiKey,
+                                  obscureText: _controller.obscureApiKey,
+                                  accent: accent,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _controller.obscureApiKey
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: context.aura.textDim,
+                                    ),
+                                    onPressed:
+                                        _controller.toggleApiKeyVisibility,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                _buildTextField(
+                                  controller: _modelIdField,
+                                  label: 'Model ID',
+                                  hint: 'nousresearch/hermes-3-llama-3.1-70b',
+                                  errorText: _controller.formErrors['modelId'],
+                                  onChanged: _controller.updateModelId,
+                                  accent: accent,
+                                ),
+                                const SizedBox(height: 14),
+                                _buildTextField(
+                                  controller: _researchField,
+                                  label: 'Modelo de investigación (opcional)',
+                                  hint:
+                                      'perplexity/sonar o un modelo ":online"',
+                                  onChanged: _controller.updateResearchModelId,
+                                  accent: accent,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Para investigar con datos de la web, usa un modelo con búsqueda. Si lo dejas vacío, investiga el mismo modelo que escribe.',
+                                  style: TextStyle(
+                                      color: context.aura.textFaint,
+                                      fontSize: 12),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -224,8 +288,10 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 min: 0.0,
                                 max: 2.0,
                                 divisions: 40,
-                                displayValue: _controller.temperature.toStringAsFixed(2),
-                                onChanged: (v) => _controller.updateTemperature(v),
+                                displayValue:
+                                    _controller.temperature.toStringAsFixed(2),
+                                onChanged: (v) =>
+                                    _controller.updateTemperature(v),
                                 accent: accent,
                               ),
                               _buildSlider(
@@ -235,7 +301,8 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 max: 16000,
                                 divisions: 157,
                                 displayValue: _controller.maxTokens.toString(),
-                                onChanged: (v) => _controller.updateMaxTokens(v.round()),
+                                onChanged: (v) =>
+                                    _controller.updateMaxTokens(v.round()),
                                 accent: accent,
                               ),
                               _buildSlider(
@@ -244,8 +311,10 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 min: -2.0,
                                 max: 2.0,
                                 divisions: 40,
-                                displayValue: _controller.frequencyPenalty.toStringAsFixed(2),
-                                onChanged: (v) => _controller.updateFrequencyPenalty(v),
+                                displayValue: _controller.frequencyPenalty
+                                    .toStringAsFixed(2),
+                                onChanged: (v) =>
+                                    _controller.updateFrequencyPenalty(v),
                                 accent: accent,
                               ),
                               _buildSlider(
@@ -254,8 +323,10 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 min: -2.0,
                                 max: 2.0,
                                 divisions: 40,
-                                displayValue: _controller.presencePenalty.toStringAsFixed(2),
-                                onChanged: (v) => _controller.updatePresencePenalty(v),
+                                displayValue: _controller.presencePenalty
+                                    .toStringAsFixed(2),
+                                onChanged: (v) =>
+                                    _controller.updatePresencePenalty(v),
                                 accent: accent,
                               ),
                               _buildSlider(
@@ -264,15 +335,19 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 min: 500,
                                 max: 20000,
                                 divisions: 39,
-                                displayValue: '${_controller.contextChars} car. (~${_controller.contextChars ~/ 4} tokens)',
-                                onChanged: (v) => _controller.updateContextChars(v.round()),
+                                displayValue:
+                                    '${_controller.contextChars} car. (~${_controller.contextChars ~/ 4} tokens)',
+                                onChanged: (v) =>
+                                    _controller.updateContextChars(v.round()),
                                 accent: accent,
                               ),
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
                                 child: Text(
                                   'Tope para cada uno. Bájalo con modelos de ventana corta, súbelo con los grandes.',
-                                  style: TextStyle(color: context.aura.textFaint, fontSize: 11),
+                                  style: TextStyle(
+                                      color: context.aura.textFaint,
+                                      fontSize: 11),
                                 ),
                               ),
                             ],
@@ -283,28 +358,34 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: _controller.status == ConnectionStatus.testing
+                                onPressed: _controller.status ==
+                                        ConnectionStatus.testing
                                     ? null
                                     : _handleTest,
-                                icon: _controller.status == ConnectionStatus.testing
+                                icon: _controller.status ==
+                                        ConnectionStatus.testing
                                     ? const SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
                                       )
                                     : const Icon(Icons.wifi_tethering),
                                 label: const Text('Probar Conexión'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: context.aura.text,
-                                  side: BorderSide(color: accent.withValues(alpha: 0.6)),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  side: BorderSide(
+                                      color: accent.withValues(alpha: 0.6)),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: FilledButton.icon(
-                                onPressed: _controller.isSaving ? null : _handleSave,
+                                onPressed:
+                                    _controller.isSaving ? null : _handleSave,
                                 icon: _controller.isSaving
                                     ? SizedBox(
                                         width: 16,
@@ -318,7 +399,8 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                                 label: const Text('Guardar'),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: accent,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                 ),
                               ),
                             ),
@@ -328,7 +410,8 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                         Text(
                           'La API Key se cifra en el Keychain/Keystore del dispositivo.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: context.aura.textFaint, fontSize: 12),
+                          style: TextStyle(
+                              color: context.aura.textFaint, fontSize: 12),
                         ),
                       ],
                     ),
@@ -349,6 +432,117 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
         ),
       );
 
+  List<Widget> _localSection(Color accent) {
+    final c = context.aura;
+    return [
+      Text(
+        'El modelo corre dentro del teléfono: sin internet y sin que el texto salga de él. Es más lento y escribe peor que uno grande por API. Descarga con wifi.',
+        style: TextStyle(color: c.textDim, fontSize: 13),
+      ),
+      const SizedBox(height: 12),
+      for (final m in LocalModelCatalog.models) _modelCard(m, accent),
+      if (_controller.formErrors['localModel'] != null)
+        Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(_controller.formErrors['localModel']!,
+                style: TextStyle(color: c.danger, fontSize: 12))),
+    ];
+  }
+
+  Widget _modelCard(LocalModelInfo m, Color accent) {
+    final c = context.aura;
+    final installed = _models.installed.contains(m.id);
+    final downloading = _models.isDownloading(m.id);
+    final progress = _models.progress[m.id];
+    final selected = _controller.localModelId == m.id;
+    final error = _models.errors[m.id];
+    final partial = _models.partial[m.id] ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.surfaceHigh,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: selected ? accent : c.line, width: selected ? 1.5 : 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: Text(m.name,
+                      style: TextStyle(
+                          fontFamily: AuraFonts.manuscript,
+                          fontSize: 18,
+                          color: c.text))),
+              Text(m.sizeLabel,
+                  style: TextStyle(color: c.textDim, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(m.description,
+              style: TextStyle(color: c.textDim, fontSize: 12.5)),
+          const SizedBox(height: 4),
+          Text(
+              'Necesita unos ${m.ramGb.toStringAsFixed(m.ramGb % 1 == 0 ? 0 : 1)} GB de RAM libres.',
+              style: TextStyle(color: c.textFaint, fontSize: 12)),
+          const SizedBox(height: 10),
+          if (downloading) ...[
+            LinearProgressIndicator(
+                value: progress, color: accent, backgroundColor: c.line),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                    child: Text(
+                        'Descargando ${(100 * (progress ?? 0)).round()} %',
+                        style: TextStyle(color: c.textDim, fontSize: 12))),
+                TextButton(
+                    onPressed: () => _models.cancel(m),
+                    child: const Text('Pausar')),
+              ],
+            ),
+          ] else if (installed)
+            Row(
+              children: [
+                FilledButton(
+                  onPressed: selected
+                      ? null
+                      : () => _controller.updateLocalModel(m.id),
+                  child: Text(selected ? 'En uso' : 'Usar este'),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () async {
+                    await _models.delete(m);
+                    if (_controller.localModelId == m.id) {
+                      _controller.updateLocalModel('');
+                    }
+                  },
+                  child: Text('Borrar', style: TextStyle(color: c.danger)),
+                ),
+              ],
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: () => _models.download(m),
+              icon: const Icon(Icons.download_outlined, size: 18),
+              label: Text(partial > 0
+                  ? 'Continuar descarga (${(100 * partial / m.sizeBytes).round()} %)'
+                  : 'Descargar'),
+            ),
+          if (error != null)
+            Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(error,
+                    style: TextStyle(color: c.danger, fontSize: 12))),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -365,7 +559,8 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
       onChanged: onChanged,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: TextStyle(color: context.aura.text, fontFamily: 'monospace', fontSize: 14),
+      style: TextStyle(
+          color: context.aura.text, fontFamily: 'monospace', fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -411,8 +606,11 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: TextStyle(color: context.aura.textDim, fontSize: 13)),
-            Text(displayValue, style: TextStyle(color: accent, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(label,
+                style: TextStyle(color: context.aura.textDim, fontSize: 13)),
+            Text(displayValue,
+                style: TextStyle(
+                    color: accent, fontSize: 13, fontWeight: FontWeight.w600)),
           ],
         ),
         SliderTheme(
@@ -508,7 +706,9 @@ class _StatusBadge extends StatelessWidget {
           children: [
             Icon(_icon, size: 16, color: color),
             const SizedBox(width: 8),
-            Text(status.label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(status.label,
+                style: TextStyle(
+                    color: color, fontSize: 13, fontWeight: FontWeight.w600)),
           ],
         ),
       ),

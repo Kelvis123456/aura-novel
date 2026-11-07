@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'network/dynamic_openai_client.dart';
 import 'storage/secure_config_storage.dart';
 import '../features/lore/context_builder_service.dart';
 import '../features/lore/lore_repository.dart';
@@ -11,6 +10,9 @@ import '../features/projects/project_repository.dart';
 import '../features/writer/chapter_writer.dart';
 import '../features/writer/prompt_composer.dart';
 import '../features/writer/writer_service.dart';
+import 'network/llm_client.dart';
+import 'network/local_llm_client.dart';
+import '../features/local_model/local_model_manager.dart';
 
 /// App-wide dependency container. A single instance of each shared resource
 /// (network client, secure storage, lore DB, project DB) lives here so
@@ -23,7 +25,7 @@ import '../features/writer/writer_service.dart';
 /// `initState`.
 class AppScope extends InheritedWidget {
   final SecureConfigStorage configStorage;
-  final DynamicOpenAIClient apiClient;
+  final LlmClient apiClient;
   final LoreRepository loreRepository;
   final ContextBuilderService contextBuilder;
   final ProjectRepository projectRepository;
@@ -33,6 +35,8 @@ class AppScope extends InheritedWidget {
   final PromptComposer promptComposer;
   final WriterService writerService;
   final ChapterWriter chapterWriter;
+  final LocalLlmClient localClient;
+  final LocalModelManager localModels;
 
   const AppScope({
     super.key,
@@ -47,6 +51,8 @@ class AppScope extends InheritedWidget {
     required this.promptComposer,
     required this.writerService,
     required this.chapterWriter,
+    required this.localClient,
+    required this.localModels,
     required super.child,
   });
 

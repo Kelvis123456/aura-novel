@@ -9,6 +9,7 @@ import '../../core/network/models/chat_completion_response.dart';
 import '../../core/network/models/chat_message.dart';
 import '../../core/storage/secure_config_storage.dart';
 import '../lore/context_builder_service.dart';
+import '../../core/network/llm_client.dart';
 
 enum GenerationStatus { idle, generating, paused, error }
 
@@ -51,7 +52,7 @@ const _charsPerToken = 4;
 /// generations from [DynamicOpenAIClient] straight into it token-by-token,
 /// and exposes the live word/char/reading-time stats the top bar shows.
 class EditorController extends ChangeNotifier {
-  final DynamicOpenAIClient _client;
+  final LlmClient _client;
   final bool _ownsClient;
   final SecureConfigStorage _storage;
   final ContextBuilderService? _contextBuilder;
@@ -63,7 +64,7 @@ class EditorController extends ChangeNotifier {
   /// from [AppScope] — pass none to let this controller create (and own)
   /// its own client, e.g. in isolated tests.
   EditorController({
-    DynamicOpenAIClient? client,
+    LlmClient? client,
     SecureConfigStorage? storage,
     ContextBuilderService? contextBuilder,
     Future<ChatMessage?> Function(int maxChars)? storyContext,

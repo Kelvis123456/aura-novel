@@ -1,4 +1,3 @@
-import '../../core/network/dynamic_openai_client.dart';
 import '../../core/network/exceptions/api_exceptions.dart';
 import '../../core/network/models/chat_completion_request.dart';
 import '../../core/network/models/chat_message.dart';
@@ -9,12 +8,13 @@ import '../projects/models/project_model.dart';
 import 'chat_entry.dart';
 import 'prompt_composer.dart';
 import 'writing_profile.dart';
+import '../../core/network/llm_client.dart';
 
 /// The conversation with the writing assistant: it assembles the context
 /// (project profile, lore, earlier chapters, recent turns) and streams the
 /// reply. Persistence of the messages is the caller's job.
 class WriterService {
-  final DynamicOpenAIClient _client;
+  final LlmClient _client;
   final SecureConfigStorage _storage;
   final PromptComposer _composer;
   final ContextBuilderService _lore;
@@ -25,7 +25,7 @@ class WriterService {
   static const historyTurns = 16;
 
   WriterService({
-    required DynamicOpenAIClient client,
+    required LlmClient client,
     required SecureConfigStorage storage,
     required PromptComposer composer,
     required ContextBuilderService lore,

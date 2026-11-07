@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import '../../core/network/dynamic_openai_client.dart';
 import '../../core/network/exceptions/api_exceptions.dart';
 import '../../core/network/models/chat_completion_request.dart';
 import '../../core/network/models/chat_message.dart';
 import '../../core/storage/secure_config_storage.dart';
 import 'prompt_composer.dart';
 import 'writing_profile.dart';
+import '../../core/network/llm_client.dart';
 
 sealed class WriterEvent {
   const WriterEvent();
@@ -39,7 +39,7 @@ class WriterFinished extends WriterEvent {
 /// returns thousands of words. It plans the scenes, then writes them one at a
 /// time, each call seeing the plan and the end of what is already written.
 class ChapterWriter {
-  final DynamicOpenAIClient _client;
+  final LlmClient _client;
   final SecureConfigStorage _storage;
   final PromptComposer _composer;
 
@@ -51,8 +51,11 @@ class ChapterWriter {
   /// How much of the written text each call gets back as context.
   static const tailChars = 6000;
 
+  /// The same, for a model inside the phone (6k tokens of context in all).
+  static const localTailChars = 2400;
+
   ChapterWriter({
-    required DynamicOpenAIClient client,
+    required LlmClient client,
     required SecureConfigStorage storage,
     required PromptComposer composer,
   })  : _client = client,
@@ -106,6 +109,7 @@ class ChapterWriter {
     if (config == null || !config.isComplete) throw const MissingConfigException();
 
     final system = await _composer.proseSystem(profile, longForm: true);
+    final tailLimit = config.isLocal ? localTailChars : tailChars;
     final scenes = sceneCount(targetWords);
 
     final beats = scenes == 1 ? [instruction.trim()] : await _plan(config, system, context, instruction, scenes, existingText);
@@ -119,7 +123,7 @@ class ChapterWriter {
     for (var i = 0; i < beats.length; i++) {
       yield SegmentStarted(i, beats.length);
       final isLast = i == beats.length - 1;
-      final tail = written.length > tailChars ? written.substring(written.length - tailChars) : written;
+      final tail = written.length > tailLimit ? written.substring(written.length - tailLimit) : written;
 
       final prompt = StringBuffer()
         ..writeln('CHAPTER BRIEF: ${instruction.trim()}')

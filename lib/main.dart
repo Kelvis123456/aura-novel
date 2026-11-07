@@ -8,6 +8,10 @@ import 'core/network/dynamic_openai_client.dart';
 import 'core/storage/secure_config_storage.dart';
 import 'features/lore/context_builder_service.dart';
 import 'features/lore/lore_repository.dart';
+import 'core/network/llm_client.dart';
+import 'core/network/local_llm_client.dart';
+import 'core/network/routing_llm_client.dart';
+import 'features/local_model/local_model_manager.dart';
 import 'features/projects/backup_service.dart';
 import 'features/projects/chapter_summary_service.dart';
 import 'features/projects/consistency_service.dart';
@@ -34,7 +38,9 @@ class AuraNovelApp extends StatefulWidget {
 
 class _AuraNovelAppState extends State<AuraNovelApp> {
   late final SecureConfigStorage _configStorage;
-  late final DynamicOpenAIClient _apiClient;
+  late final LlmClient _apiClient;
+  late final LocalLlmClient _localClient;
+  late final LocalModelManager _localModels;
   late final LoreRepository _loreRepository;
   late final ContextBuilderService _contextBuilder;
   late final ProjectRepository _projectRepository;
@@ -49,7 +55,13 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
   void initState() {
     super.initState();
     _configStorage = SecureConfigStorage();
-    _apiClient = DynamicOpenAIClient(configStorage: _configStorage);
+    _localModels = LocalModelManager();
+    _localClient = LocalLlmClient(storage: _configStorage, manager: _localModels);
+    _apiClient = RoutingLlmClient(
+      storage: _configStorage,
+      remote: DynamicOpenAIClient(configStorage: _configStorage),
+      local: _localClient,
+    );
     _loreRepository = LoreRepository();
     _contextBuilder = ContextBuilderService(repository: _loreRepository);
     _projectRepository = ProjectRepository();
@@ -59,7 +71,8 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       storage: _configStorage,
     );
     _backupService = BackupService(projects: _projectRepository, lore: _loreRepository);
-    _promptComposer = PromptComposer(CraftLibrary());
+    // A model in the phone has a small context: it always gets the short craft prompt.
+    _promptComposer = PromptComposer(CraftLibrary(), preferShort: () async => (await _configStorage.load())?.isLocal ?? false);
     _writerService = WriterService(
       client: _apiClient,
       storage: _configStorage,
@@ -99,6 +112,8 @@ class _AuraNovelAppState extends State<AuraNovelApp> {
       promptComposer: _promptComposer,
       writerService: _writerService,
       chapterWriter: _chapterWriter,
+      localClient: _localClient,
+      localModels: _localModels,
       child: MaterialApp(
         title: 'AURA NOVEL',
         debugShowCheckedModeBanner: false,
