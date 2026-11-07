@@ -5,20 +5,24 @@ import 'word_diff.dart';
 
 /// Shows what a rewrite changed and lets the author keep or undo each change. Returns the text
 /// with the chosen changes, or null if they close it without applying.
-Future<String?> showDiffReview(BuildContext context, {required String original, required String updated}) {
+///
+/// With [readOnly] it only shows the differences (to compare two saved versions) and never
+/// returns text.
+Future<String?> showDiffReview(BuildContext context, {required String original, required String updated, bool readOnly = false}) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: context.aura.bg,
-    builder: (_) => _DiffReviewSheet(original: original, updated: updated),
+    builder: (_) => _DiffReviewSheet(original: original, updated: updated, readOnly: readOnly),
   );
 }
 
 class _DiffReviewSheet extends StatefulWidget {
   final String original;
   final String updated;
-  const _DiffReviewSheet({required this.original, required this.updated});
+  final bool readOnly;
+  const _DiffReviewSheet({required this.original, required this.updated, required this.readOnly});
 
   @override
   State<_DiffReviewSheet> createState() => _DiffReviewSheetState();
@@ -47,7 +51,7 @@ class _DiffReviewSheetState extends State<_DiffReviewSheet> {
         alignment: PlaceholderAlignment.baseline,
         baseline: TextBaseline.alphabetic,
         child: GestureDetector(
-          onTap: () => setState(() => _accepted[index] = !accepted),
+          onTap: widget.readOnly ? null : () => setState(() => _accepted[index] = !accepted),
           child: Text.rich(
             TextSpan(children: [
               if (h.before.trim().isNotEmpty)
@@ -81,35 +85,39 @@ class _DiffReviewSheetState extends State<_DiffReviewSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Revisar cambios', style: Theme.of(context).textTheme.titleLarge),
+          Text(widget.readOnly ? 'Comparar versiones' : 'Revisar cambios', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 4),
           Text(
-            _accepted.isEmpty ? 'El texto no cambió.' : 'Toca un cambio para quedarte con el original. Verde es lo nuevo, rojo lo que sale.',
+            _accepted.isEmpty ? 'Las dos versiones son iguales.' : widget.readOnly ? 'Rojo es lo que tenía la versión anterior, verde lo que cambió en esta.' : 'Toca un cambio para quedarte con el original. Verde es lo nuevo, rojo lo que sale.',
             style: TextStyle(color: c.textDim, fontSize: 13),
           ),
           const SizedBox(height: 12),
           Expanded(child: SingleChildScrollView(child: Text.rich(TextSpan(children: spans), style: base))),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Text('$accepted de ${_accepted.length} cambios', style: TextStyle(color: c.textFaint, fontSize: 12)),
-              const Spacer(),
-              TextButton(onPressed: _accepted.isEmpty ? null : () => _setAll(false), child: const Text('Ninguno')),
-              TextButton(onPressed: _accepted.isEmpty ? null : () => _setAll(true), child: const Text('Todos')),
-            ],
-          ),
-          Row(
-            children: [
-              Expanded(child: OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar'))),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(WordDiff.merge(_hunks, _accepted)),
-                  child: const Text('Aplicar'),
+          if (widget.readOnly)
+            SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cerrar')))
+          else ...[
+            Row(
+              children: [
+                Text('$accepted de ${_accepted.length} cambios', style: TextStyle(color: c.textFaint, fontSize: 12)),
+                const Spacer(),
+                TextButton(onPressed: _accepted.isEmpty ? null : () => _setAll(false), child: const Text('Ninguno')),
+                TextButton(onPressed: _accepted.isEmpty ? null : () => _setAll(true), child: const Text('Todos')),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(child: OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar'))),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(WordDiff.merge(_hunks, _accepted)),
+                    child: const Text('Aplicar'),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
