@@ -8,6 +8,7 @@ import '../../core/widgets/aura_mark.dart';
 import 'chapter_writer.dart';
 import 'chat_entry.dart';
 import 'craft_tools_sheet.dart';
+import 'diff_review_sheet.dart';
 import 'writer_chat_controller.dart';
 import 'writing_profile_sheet.dart';
 
@@ -310,6 +311,11 @@ class _WriterChatScreenState extends State<WriterChatScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copiado.')));
                 }),
                 if (prose || words > 150) _action(c, Icons.note_add_outlined, 'Añadir al capítulo', () => _insert(e)),
+                if (ctl.originalOf(e) != null)
+                  _action(c, Icons.compare_arrows, 'Ver cambios', () async {
+                    final merged = await showDiffReview(context, original: ctl.originalOf(e)!, updated: e.content);
+                    if (merged != null && merged != e.content) await ctl.replaceContent(e, merged);
+                  }),
                 if (e.kind == 'research') _action(c, Icons.bookmark_add_outlined, 'Guardar en Mundo', () async {
                   await ctl.saveResearch(e);
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guardado como ficha de investigación.')));
