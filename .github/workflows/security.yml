@@ -35,11 +35,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - run: uvx semgrep scan --metrics=off --error --config p/default --config p/typescript --config p/nodejs
 
   osv:
-    if: hashFiles('**/package-lock.json','**/pnpm-lock.yaml','**/yarn.lock','**/poetry.lock','**/uv.lock','**/requirements.txt','**/packages.lock.json','**/pubspec.lock','**/go.sum','**/Cargo.lock') != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -47,6 +46,7 @@ jobs:
         with:
           persist-credentials: false
       - name: osv-scanner
+        if: hashFiles('**/package-lock.json','**/pnpm-lock.yaml','**/yarn.lock','**/poetry.lock','**/uv.lock','**/requirements.txt','**/packages.lock.json','**/pubspec.lock','**/go.sum','**/Cargo.lock') != ''
         run: |
           curl -sSfL -o osv-scanner https://github.com/google/osv-scanner/releases/download/v2.2.2/osv-scanner_linux_amd64
           chmod +x osv-scanner
@@ -59,16 +59,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - run: uvx zizmor .github/workflows
 
   bandit:
-    if: hashFiles('**/*.py') != ''
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        if: hashFiles('**/*.py') != ''
       - run: uvx bandit -r . -ll -x ./node_modules,./.venv,./tests
+        if: hashFiles('**/*.py') != ''
