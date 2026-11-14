@@ -63,6 +63,7 @@ void main() {
         expect(m.url, endsWith(m.fileName));
         expect(m.sizeBytes, greaterThan(100000000));
       }
+      expect(LocalModelCatalog.byId('qwen3-4b-2507-abliterated-q4'), isNotNull);
       expect(LocalModelCatalog.byId('no existe'), isNull);
     });
   });

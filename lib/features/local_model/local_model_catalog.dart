@@ -25,15 +25,24 @@ class LocalModelInfo {
   String get sizeLabel => sizeBytes >= 1000000000 ? '${(sizeBytes / 1e9).toStringAsFixed(1)} GB' : '${(sizeBytes / 1e6).round()} MB';
 }
 
-/// The models offered in the app. All are GGUF files of Gemma 3 with the
-/// refusal behaviour removed ("abliterated"), so what they write depends on the
-/// prompt and not on built-in refusals.
+/// The models offered in the app. All are GGUF files (Qwen3 and Gemma 3) with
+/// the refusal behaviour removed ("abliterated"), so what they write depends on
+/// the prompt and not on built-in refusals.
 class LocalModelCatalog {
   static const models = [
     LocalModelInfo(
+      id: 'qwen3-4b-2507-abliterated-q4',
+      name: 'Qwen3 4B sin negativas',
+      description: 'El más equilibrado: casi el doble de rápido que un 8B y mantiene bien el hilo en escenas largas. No piensa en voz alta, así que todo lo que sale es texto de la novela.',
+      url: 'https://huggingface.co/mradermacher/Huihui-Qwen3-4B-Instruct-2507-abliterated-GGUF/resolve/main/Huihui-Qwen3-4B-Instruct-2507-abliterated.Q4_K_M.gguf',
+      fileName: 'Huihui-Qwen3-4B-Instruct-2507-abliterated.Q4_K_M.gguf',
+      sizeBytes: 2497281312,
+      ramGb: 4.0,
+    ),
+    LocalModelInfo(
       id: 'gemma3-4b-abliterated-q4',
       name: 'Gemma 3 4B sin negativas',
-      description: 'El que mejor escribe en español de los dos. Pide un teléfono con 8 GB de RAM o más y va despacio.',
+      description: 'Prosa y diálogo muy naturales en español. Pide un teléfono con 8 GB de RAM o más y va despacio.',
       url: 'https://huggingface.co/mlabonne/gemma-3-4b-it-abliterated-v2-GGUF/resolve/main/gemma-3-4b-it-abliterated-v2.q4_k_m.gguf',
       fileName: 'gemma-3-4b-it-abliterated-v2.q4_k_m.gguf',
       sizeBytes: 2490000000,
